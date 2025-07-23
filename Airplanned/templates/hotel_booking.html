@@ -1,0 +1,414 @@
+{% extends "base.html" %}
+
+{% block title %}Book Hotel {{ hotel[1] }} - AirPlanned{% endblock %}
+
+{% block content %}
+<div class="booking-container">
+    <div class="hotel-summary">
+        <h2>Hotel Details</h2>
+        <div class="hotel-info">
+            <div class="info-group">
+                <label>Hotel:</label>
+                <span>{{ hotel[1] }}</span>
+            </div>
+            <div class="info-group">
+                <label>Location:</label>
+                <span>{{ hotel[2] }}</span>
+            </div>
+            <div class="info-group">
+                <label>Star Rating:</label>
+                <span>{% for i in range(hotel[3] or 3) %}⭐{% endfor %} ({{ hotel[3] or 3 }} stars)</span>
+            </div>
+            <div class="info-group">
+                <label>Amenities:</label>
+                <span>{{ hotel[4] if hotel[4] else 'Standard amenities available' }}</span>
+            </div>
+            <div class="info-group">
+                <label>Contact:</label>
+                <span>{{ hotel[5] if hotel[5] else 'Available at front desk' }}</span>
+            </div>
+            <div class="info-group">
+                <label>Price per Night:</label>
+                <span class="price">${{ "%.2f"|format(hotel[6]) }}</span>
+            </div>
+            <div class="info-group">
+                <label>Available Rooms:</label>
+                <span>{{ hotel[7] }} rooms</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden data for JavaScript -->
+    <div id="hotelData" style="display: none;" 
+         data-base-price="{{ hotel[6] }}"
+         data-hotel-id="{{ hotel[0] }}">
+    </div>
+
+    <form method="POST" action="{{ url_for('confirm_hotel_booking') }}" class="booking-form" novalidate>
+        <input type="hidden" name="hotel_id" value="{{ hotel[0] }}">
+        
+        <h3>Booking Information</h3>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label for="check_in_date">Check-in Date *</label>
+                <input type="date" name="check_in_date" id="check_in_date" class="form-control" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="check_out_date">Check-out Date *</label>
+                <input type="date" name="check_out_date" id="check_out_date" class="form-control" required>
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label for="room_type">Room Type *</label>
+                <select name="room_type" id="room_type" class="form-control" required>
+                    <option value="">Select Room Type</option>
+                    <option value="standard">Standard Room - ${{ "%.2f"|format(hotel[6]) }}</option>
+                    <option value="deluxe">Deluxe Room - ${{ "%.2f"|format(hotel[6] * 1.3) }}</option>
+                    <option value="suite">Suite - ${{ "%.2f"|format(hotel[6] * 1.8) }}</option>
+                    <option value="penthouse">Penthouse - ${{ "%.2f"|format(hotel[6] * 2.5) }}</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="guests">Number of Guests *</label>
+                <select name="guests" id="guests" class="form-control" required>
+                    <option value="1">1 Guest</option>
+                    <option value="2">2 Guests</option>
+                    <option value="3">3 Guests</option>
+                    <option value="4">4 Guests</option>
+                    <option value="5">5+ Guests</option>
+                </select>
+            </div>
+        </div>
+        
+        <h3>Guest Information</h3>
+        <div class="form-group">
+            <label for="guest_name">Full Name *</label>
+            <input type="text" name="guest_name" id="guest_name" class="form-control" required 
+                   placeholder="Enter full name as on ID" maxlength="100">
+            <small>Name must match your government-issued ID</small>
+        </div>
+        
+        <div class="form-group">
+            <label for="guest_email">Email Address *</label>
+            <input type="email" name="guest_email" id="guest_email" class="form-control" required 
+                   placeholder="example@email.com" maxlength="100">
+            <small>We'll send your confirmation and updates to this email</small>
+        </div>
+        
+        <div class="form-group">
+            <label for="guest_phone">Phone Number *</label>
+            <input type="tel" name="guest_phone" id="guest_phone" class="form-control" required 
+                   placeholder="+973 XXXX XXXX" maxlength="20">
+            <small>For booking updates and emergency contact</small>
+        </div>
+        
+        <div class="booking-summary-box">
+            <h4>Booking Summary</h4>
+            <div id="booking-calculation">
+                <div class="calc-row">
+                    <span>Check-in:</span>
+                    <span id="checkin-display">Select date</span>
+                </div>
+                <div class="calc-row">
+                    <span>Check-out:</span>
+                    <span id="checkout-display">Select date</span>
+                </div>
+                <div class="calc-row">
+                    <span>Nights:</span>
+                    <span id="nights-display">0</span>
+                </div>
+                <div class="calc-row">
+                    <span>Room Type:</span>
+                    <span id="room-display">Select room</span>
+                </div>
+                <div class="calc-row total">
+                    <span>Total Amount:</span>
+                    <span id="total-display">$0.00</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="terms-section">
+            <label class="checkbox-container">
+                <input type="checkbox" id="accept_terms" required>
+                <span class="checkmark"></span>
+                I accept the <a href="#" target="_blank">Terms of Service</a> and <a href="#" target="_blank">Cancellation Policy</a>
+            </label>
+        </div>
+        
+        <div class="booking-actions">
+            <button type="submit" class="btn btn-primary btn-large" id="confirmBooking" disabled>
+                Complete dates and room selection
+            </button>
+            <a href="{{ url_for('hotels') }}" class="btn btn-secondary">Cancel Booking</a>
+        </div>
+    </form>
+</div>
+
+<script>
+// Get data from DOM
+var basePrice = 0;
+var roomMultipliers = {};
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize pricing data from DOM
+    var hotelData = document.getElementById('hotelData');
+    if (hotelData) {
+        basePrice = parseFloat(hotelData.dataset.basePrice) || 0;
+        
+        // Calculate room multipliers
+        roomMultipliers = {
+            'standard': 1.0,
+            'deluxe': 1.3,
+            'suite': 1.8,
+            'penthouse': 2.5
+        };
+    }
+    
+    var today = new Date().toISOString().split('T')[0];
+    var checkinDate = document.getElementById('check_in_date');
+    var checkoutDate = document.getElementById('check_out_date');
+    
+    if (checkinDate && checkoutDate) {
+        checkinDate.min = today;
+        checkoutDate.min = today;
+        
+        // Set default dates
+        checkinDate.value = today;
+        var tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        checkoutDate.value = tomorrow.toISOString().split('T')[0];
+        
+        // Event listeners
+        checkinDate.addEventListener('change', function() {
+            var checkinValue = new Date(this.value);
+            checkinValue.setDate(checkinValue.getDate() + 1);
+            checkoutDate.min = checkinValue.toISOString().split('T')[0];
+            
+            if (new Date(checkoutDate.value) <= new Date(this.value)) {
+                checkoutDate.value = checkinValue.toISOString().split('T')[0];
+            }
+            updateBookingSummary();
+        });
+        
+        checkoutDate.addEventListener('change', updateBookingSummary);
+    }
+    
+    // Other event listeners
+    const roomTypeSelect = document.getElementById('room_type');
+    if (roomTypeSelect) {
+        roomTypeSelect.addEventListener('change', updateBookingSummary);
+    }
+    
+    const acceptTerms = document.getElementById('accept_terms');
+    if (acceptTerms) {
+        acceptTerms.addEventListener('change', updateConfirmButton);
+    }
+    
+    // Form validation
+    const formInputs = [
+        document.getElementById('guest_name'),
+        document.getElementById('guest_email'),
+        document.getElementById('guest_phone')
+    ];
+    
+    formInputs.forEach(input => {
+        if (input) {
+            input.addEventListener('input', updateConfirmButton);
+        }
+    });
+    
+    updateBookingSummary();
+});
+
+function updateBookingSummary() {
+    var checkinDate = document.getElementById('check_in_date');
+    var checkoutDate = document.getElementById('check_out_date');
+    var roomType = document.getElementById('room_type');
+    
+    var checkinValue = checkinDate ? checkinDate.value : '';
+    var checkoutValue = checkoutDate ? checkoutDate.value : '';
+    var roomTypeValue = roomType ? roomType.value : '';
+    
+    // Update displays
+    const checkinDisplay = document.getElementById('checkin-display');
+    const checkoutDisplay = document.getElementById('checkout-display');
+    
+    if (checkinDisplay) {
+        checkinDisplay.textContent = checkinValue ? new Date(checkinValue).toLocaleDateString() : 'Select date';
+    }
+    if (checkoutDisplay) {
+        checkoutDisplay.textContent = checkoutValue ? new Date(checkoutValue).toLocaleDateString() : 'Select date';
+    }
+    
+    if (checkinValue && checkoutValue) {
+        var nights = Math.ceil((new Date(checkoutValue) - new Date(checkinValue)) / (1000 * 60 * 60 * 24));
+        const nightsDisplay = document.getElementById('nights-display');
+        if (nightsDisplay) {
+            nightsDisplay.textContent = nights;
+        }
+        
+        if (roomTypeValue && roomMultipliers[roomTypeValue] && basePrice > 0) {
+            var roomText = roomTypeValue.charAt(0).toUpperCase() + roomTypeValue.slice(1) + ' Room';
+            const roomDisplay = document.getElementById('room-display');
+            if (roomDisplay) {
+                roomDisplay.textContent = roomText;
+            }
+            
+            var roomPrice = basePrice * roomMultipliers[roomTypeValue];
+            var totalPrice = roomPrice * nights;
+            const totalDisplay = document.getElementById('total-display');
+            if (totalDisplay) {
+                totalDisplay.textContent = '$' + totalPrice.toFixed(2);
+            }
+        } else {
+            const roomDisplay = document.getElementById('room-display');
+            const totalDisplay = document.getElementById('total-display');
+            if (roomDisplay) roomDisplay.textContent = 'Select room';
+            if (totalDisplay) totalDisplay.textContent = '$0.00';
+        }
+    } else {
+        const nightsDisplay = document.getElementById('nights-display');
+        const roomDisplay = document.getElementById('room-display');
+        const totalDisplay = document.getElementById('total-display');
+        
+        if (nightsDisplay) nightsDisplay.textContent = '0';
+        if (roomDisplay) roomDisplay.textContent = 'Select room';
+        if (totalDisplay) totalDisplay.textContent = '$0.00';
+    }
+    
+    updateConfirmButton();
+}
+
+function updateConfirmButton() {
+    var checkinDate = document.getElementById('check_in_date');
+    var checkoutDate = document.getElementById('check_out_date');
+    var roomType = document.getElementById('room_type');
+    var guestName = document.getElementById('guest_name');
+    var guestEmail = document.getElementById('guest_email');
+    var guestPhone = document.getElementById('guest_phone');
+    var termsAccepted = document.getElementById('accept_terms');
+    
+    var confirmButton = document.getElementById('confirmBooking');
+    if (!confirmButton) return;
+    
+    var checkinValue = checkinDate ? checkinDate.value : '';
+    var checkoutValue = checkoutDate ? checkoutDate.value : '';
+    var roomTypeValue = roomType ? roomType.value : '';
+    var guestNameValue = guestName ? guestName.value.trim() : '';
+    var guestEmailValue = guestEmail ? guestEmail.value.trim() : '';
+    var guestPhoneValue = guestPhone ? guestPhone.value.trim() : '';
+    var termsAcceptedValue = termsAccepted ? termsAccepted.checked : false;
+    
+    if (checkinValue && checkoutValue && roomTypeValue && guestNameValue && guestEmailValue && guestPhoneValue && termsAcceptedValue && basePrice > 0 && roomMultipliers[roomTypeValue]) {
+        var nights = Math.ceil((new Date(checkoutValue) - new Date(checkinValue)) / (1000 * 60 * 60 * 24));
+        var roomPrice = basePrice * roomMultipliers[roomTypeValue];
+        var totalPrice = roomPrice * nights;
+        
+        confirmButton.disabled = false;
+        confirmButton.textContent = 'Confirm Booking - $' + totalPrice.toFixed(2);
+        confirmButton.classList.add('btn-ready');
+    } else {
+        confirmButton.disabled = true;
+        if (!checkinValue || !checkoutValue) {
+            confirmButton.textContent = 'Select check-in and check-out dates';
+        } else if (!roomTypeValue) {
+            confirmButton.textContent = 'Select room type';
+        } else if (!guestNameValue || !guestEmailValue || !guestPhoneValue) {
+            confirmButton.textContent = 'Complete guest information';
+        } else if (!termsAcceptedValue) {
+            confirmButton.textContent = 'Accept terms to continue';
+        }
+        confirmButton.classList.remove('btn-ready');
+    }
+}
+
+// Form submission
+document.addEventListener('DOMContentLoaded', function() {
+    const bookingForm = document.querySelector('.booking-form');
+    if (bookingForm) {
+        bookingForm.addEventListener('submit', function(e) {
+            var checkinDate = document.getElementById('check_in_date');
+            var checkoutDate = document.getElementById('check_out_date');
+            
+            if (checkinDate && checkoutDate) {
+                var checkinValue = new Date(checkinDate.value);
+                var checkoutValue = new Date(checkoutDate.value);
+                
+                if (checkoutValue <= checkinValue) {
+                    e.preventDefault();
+                    alert('Check-out date must be after check-in date');
+                    return;
+                }
+                
+                var nights = Math.ceil((checkoutValue - checkinValue) / (1000 * 60 * 60 * 24));
+                if (nights > 30) {
+                    e.preventDefault();
+                    alert('Maximum stay is 30 nights. Please select a shorter duration.');
+                    return;
+                }
+            }
+            
+            var submitButton = e.target.querySelector('button[type="submit"]');
+            if (submitButton) {
+                submitButton.innerHTML = '⏳ Processing Booking...';
+                submitButton.disabled = true;
+            }
+        });
+    }
+});
+</script>
+
+<style>
+.hotel-summary {
+    background: white;
+    padding: 2rem;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    margin-bottom: 2rem;
+}
+
+.booking-summary-box {
+    background: #f8fafc;
+    padding: 1.5rem;
+    border-radius: 12px;
+    margin: 1.5rem 0;
+    border: 1px solid #e2e8f0;
+}
+
+.booking-summary-box h4 {
+    margin-bottom: 1rem;
+    color: #374151;
+}
+
+.calc-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+    padding: 0.5rem 0;
+}
+
+.calc-row.total {
+    border-top: 2px solid #e2e8f0;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.btn-ready {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+}
+</style>
+{% endblock %}

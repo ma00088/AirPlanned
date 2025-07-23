@@ -1,0 +1,181 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Dashboard - Admin Panel{% endblock %}
+{% block header %}Dashboard{% endblock %}
+
+{% block content %}
+<style>
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.5rem;
+        border-radius: 12px;
+        text-align: center;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    }
+    
+    .stat-card.secondary {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    }
+    
+    .stat-card.success {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    }
+    
+    .stat-card.warning {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    }
+    
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+            color: white;
+    }
+    
+    .stat-label {
+        font-size: 1rem;
+        opacity: 0.9;
+        color: white;
+    }
+    
+    .revenue-section {
+        margin-top: 2rem;
+        padding: 2rem;
+        background: #f8fafc;
+        border-radius: 12px;
+    }
+    
+    .revenue-title {
+        font-size: 1.5rem;
+        color: #1f2937;
+        margin-bottom: 1.5rem;
+    }
+    
+    .revenue-amount {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #059669;
+    }
+    
+    .quick-actions {
+        margin-top: 2rem;
+    }
+    
+    .quick-actions h3 {
+        color: #1f2937;
+        margin-bottom: 1rem;
+    }
+    
+    .actions-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+    
+    .action-card {
+        background: #f8fafc;
+        padding: 1.5rem;
+        border-radius: 8px;
+        text-align: center;
+        text-decoration: none;
+        color: #374151;
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+    }
+    
+    .action-card:hover {
+        background: white;
+        border-color: #667eea;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    .action-icon {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+    }
+</style>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-number">{{ stats.active_flights }}</div>
+        <div class="stat-label">Active Flights</div>
+    </div>
+    
+    <div class="stat-card secondary">
+        <div class="stat-number">{{ stats.active_hotels }}</div>
+        <div class="stat-label">Active Hotels</div>
+    </div>
+    
+    <div class="stat-card success">
+        <div class="stat-number">{{ stats.active_cars }}</div>
+        <div class="stat-label">Active Car Rentals</div>
+    </div>
+    
+    <div class="stat-card warning">
+        <div class="stat-number">{{ stats.total_users }}</div>
+        <div class="stat-label">Total Users</div>
+    </div>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card secondary">
+        <div class="stat-number">{{ stats.flight_bookings }}</div>
+        <div class="stat-label">Flight Bookings</div>
+    </div>
+    
+    <div class="stat-card success">
+        <div class="stat-number">{{ stats.hotel_bookings }}</div>
+        <div class="stat-label">Hotel Bookings</div>
+    </div>
+    
+    <div class="stat-card warning">
+        <div class="stat-number">{{ stats.car_bookings }}</div>
+        <div class="stat-label">Car Bookings</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-number">{{ stats.flight_bookings + stats.hotel_bookings + stats.car_bookings }}</div>
+        <div class="stat-label">Total Bookings</div>
+    </div>
+</div>
+
+<div class="revenue-section">
+    <h2 class="revenue-title">💰 Revenue (Last 30 Days)</h2>
+    <div class="revenue-amount">${{ "%.2f"|format(stats.revenue_flights) }}</div>
+    <p>From flight bookings</p>
+</div>
+
+<div class="quick-actions">
+    <h3>Quick Actions</h3>
+    <div class="actions-grid">
+        <a href="{{ url_for('admin_add_flight') }}" class="action-card">
+            <div class="action-icon">✈️</div>
+            <div>Add New Flight</div>
+        </a>
+        
+        <a href="{{ url_for('admin_add_hotel') }}" class="action-card">
+            <div class="action-icon">🏨</div>
+            <div>Add New Hotel</div>
+        </a>
+        
+        <a href="{{ url_for('admin_add_car') }}" class="action-card">
+            <div class="action-icon">🚗</div>
+            <div>Add New Car Rental</div>
+        </a>
+        
+        <a href="{{ url_for('index') }}" class="action-card">
+            <div class="action-icon">🌐</div>
+            <div>View Website</div>
+        </a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,151 @@
+{% extends "admin/base.html" %}
+
+{% block title %}{% if hotel %}Edit{% else %}Add{% endif %} Hotel - Admin Panel{% endblock %}
+{% block header %}{% if hotel %}Edit {{ hotel[1] }}{% else %}Add New Hotel{% endif %}{% endblock %}
+
+{% block content %}
+<style>
+    .form-container {
+        max-width: 800px;
+    }
+    
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .form-group label {
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: #374151;
+    }
+    
+    .form-control {
+        padding: 0.75rem;
+        border: 2px solid #e2e8f0;
+        border-radius: 6px;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+    }
+    
+    .form-control:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    textarea.form-control {
+        min-height: 100px;
+        resize: vertical;
+    }
+    
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+    }
+    
+    .btn-save {
+        background: #10b981;
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 6px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+    }
+    
+    .btn-save:hover {
+        background: #059669;
+    }
+    
+    .btn-cancel {
+        background: #6b7280;
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 6px;
+        text-decoration: none;
+        display: inline-block;
+    }
+    
+    .btn-cancel:hover {
+        background: #4b5563;
+    }
+</style>
+
+<div class="form-container">
+    <form method="POST" action="">
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="hotel_name">Hotel Name *</label>
+                <input type="text" name="hotel_name" id="hotel_name" class="form-control" 
+                       value="{% if hotel %}{{ hotel[1] }}{% endif %}" required 
+                       placeholder="e.g., Four Seasons Bahrain Bay">
+            </div>
+            
+            <div class="form-group">
+                <label for="location">Location *</label>
+                <input type="text" name="location" id="location" class="form-control" 
+                       value="{% if hotel %}{{ hotel[2] }}{% endif %}" required 
+                       placeholder="e.g., Manama, Bahrain">
+            </div>
+        </div>
+        
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="star_rating">Star Rating *</label>
+                <select name="star_rating" id="star_rating" class="form-control" required>
+                    <option value="">Select Rating</option>
+                    <option value="1" {% if hotel and hotel[3] == 1 %}selected{% endif %}>⭐ 1 Star</option>
+                    <option value="2" {% if hotel and hotel[3] == 2 %}selected{% endif %}>⭐⭐ 2 Stars</option>
+                    <option value="3" {% if hotel and hotel[3] == 3 %}selected{% endif %}>⭐⭐⭐ 3 Stars</option>
+                    <option value="4" {% if hotel and hotel[3] == 4 %}selected{% endif %}>⭐⭐⭐⭐ 4 Stars</option>
+                    <option value="5" {% if hotel and hotel[3] == 5 %}selected{% endif %}>⭐⭐⭐⭐⭐ 5 Stars</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="contact_info">Contact Info</label>
+                <input type="text" name="contact_info" id="contact_info" class="form-control" 
+                       value="{% if hotel %}{{ hotel[5] }}{% endif %}" 
+                       placeholder="e.g., +973-1711-5000">
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label for="amenities">Amenities</label>
+            <textarea name="amenities" id="amenities" class="form-control" 
+                      placeholder="e.g., WiFi, Pool, Spa, Restaurant, Beach Access, Fitness Center">{% if hotel %}{{ hotel[4] }}{% endif %}</textarea>
+        </div>
+        
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="price_per_night">Price per Night (USD) *</label>
+                <input type="number" name="price_per_night" id="price_per_night" class="form-control" 
+                       value="{% if hotel %}{{ hotel[6]|decimal_to_float }}{% endif %}" required 
+                       min="0" step="0.01" placeholder="199.99">
+            </div>
+            
+            <div class="form-group">
+                <label for="availability">Available Rooms *</label>
+                <input type="number" name="availability" id="availability" class="form-control" 
+                       value="{% if hotel %}{{ hotel[7] }}{% endif %}" required 
+                       min="0" placeholder="50">
+            </div>
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn-save">{% if hotel %}Update{% else %}Add{% endif %} Hotel</button>
+            <a href="{{ url_for('admin_hotels') }}" class="btn-cancel">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}Booking Confirmed - AirPlanned{% endblock %}
+
+{% block content %}
+<div class="success-container">
+    <div class="success-icon">✓</div>
+    <h1>Booking Confirmed</h1>
+    <p>Your flight has been successfully booked. Here are your booking details:</p>
+    
+    <div class="confirmation-details">
+        <h3>Booking Confirmation</h3>
+        <div class="confirmation-card">
+            <div class="detail-row">
+                <span>Booking ID:</span>
+                <span class="booking-id">#{{ booking[0] }}</span>
+            </div>
+            <div class="detail-row">
+                <span>Flight:</span>
+                <span>{{ booking[4] }}</span>
+            </div>
+            <div class="detail-row">
+                <span>Route:</span>
+                <span>{{ booking[5] }} ({{ booking[7] }}) → {{ booking[6] }} ({{ booking[8] }})</span>
+            </div>
+            <div class="detail-row">
+                <span>Date & Time:</span>
+                <span>{{ booking[9]|format_date }} at {{ booking[10]|format_time }}</span>
+            </div>
+            <div class="detail-row">
+                <span>Arrival Time:</span>
+                <span>{{ booking[11]|format_time }}</span>
+            </div>
+            <div class="detail-row">
+                <span>Passenger:</span>
+                <span>{{ booking[1] }}</span>
+            </div>
+            <div class="detail-row">
+                <span>Seat:</span>
+                <span>{{ booking[2] }}</span>
+            </div>
+            <div class="detail-row">
+                <span>Booking Date:</span>
+                <span>{{ booking[3]|format_date }}</span>
+            </div>
+            <div class="detail-row total">
+                <span>Amount Paid:</span>
+                <span class="price">${{ "%.2f"|format(booking[12]) }}</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="success-actions">
+        <a href="{{ url_for('dashboard') }}" class="btn btn-primary">View My Bookings</a>
+        <a href="{{ url_for('index') }}" class="btn btn-secondary">Book Another Flight</a>
+    </div>
+    
+    <div class="next-steps">
+        <h4>Important Information</h4>
+        <ul>
+            <li>A confirmation email has been sent to your registered email address</li>
+            <li>Check-in opens 24 hours before departure</li>
+            <li>Arrive at the airport at least 2 hours before domestic flights (3 hours for international)</li>
+            <li>Bring a valid ID or passport matching the name on your booking</li>
+            <li>You can manage your booking from the "My Bookings" page</li>
+            <li>Mobile boarding passes will be available 24 hours before departure</li>
+        </ul>
+    </div>
+    
+    <div class="contact-info">
+        <h4>Need Assistance?</h4>
+        <p>If you have any questions about your booking, our customer service team is here to help:</p>
+        <div class="contact-details">
+            <div class="contact-item">
+                <span class="contact-icon">Phone:</span>
+                <span>+1 (800) 247-7526</span>
+            </div>
+            <div class="contact-item">
+                <span class="contact-icon">Email:</span>
+                <span>support@airplanned.com</span>
+            </div>
+            <div class="contact-item">
+                <span class="contact-icon">Hours:</span>
+                <span>24/7 Customer Support</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-scroll to top on page load
+window.scrollTo(0, 0);
+
+// Add some celebration animation
+document.addEventListener('DOMContentLoaded', function() {
+    const successIcon = document.querySelector('.success-icon');
+    successIcon.style.animation = 'checkmark 0.6s ease-in-out';
+});
+
+// Add CSS for animations
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes checkmark {
+        0% { 
+            transform: scale(0) rotate(0deg); 
+            opacity: 0;
+        }
+        50% { 
+            transform: scale(1.2) rotate(180deg); 
+            opacity: 1;
+        }
+        100% { 
+            transform: scale(1) rotate(360deg); 
+            opacity: 1;
+        }
+    }
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}

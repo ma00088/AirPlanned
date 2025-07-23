@@ -1,0 +1,195 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Flights - Admin Panel{% endblock %}
+{% block header %}Manage Flights{% endblock %}
+
+{% block content %}
+<style>
+    .admin-controls {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+    
+    .search-container {
+        flex: 1;
+        max-width: 500px;
+    }
+    
+    .search-form {
+        display: flex;
+        gap: 0.5rem;
+    }
+    
+    .search-input {
+        flex: 1;
+        padding: 0.75rem;
+        border: 2px solid #e2e8f0;
+        border-radius: 6px;
+        font-size: 1rem;
+    }
+    
+    .search-input:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    .btn-search {
+        background: #667eea;
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+    
+    .btn-search:hover {
+        background: #5a67d8;
+    }
+    
+    .btn-clear {
+        background: #6b7280;
+        color: white;
+        padding: 0.75rem 1rem;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+    }
+    
+    .btn-clear:hover {
+        background: #4b5563;
+    }
+    
+    .search-results-info {
+        background: #f0f9ff;
+        padding: 1rem;
+        border-radius: 6px;
+        margin-bottom: 1rem;
+        color: #0c4a6e;
+    }
+    
+    .highlight {
+        background-color: #fef3c7;
+        padding: 2px 4px;
+        border-radius: 3px;
+    }
+    
+    td small {
+        color: #6b7280;
+    }
+</style>
+
+<div class="admin-controls">
+    <div class="search-container">
+        <form method="GET" action="{{ url_for('admin_flights') }}" class="search-form">
+            <input type="text" 
+                   name="search" 
+                   class="search-input" 
+                   placeholder="Search by flight number, route, airport, airline..." 
+                   value="{{ search_query }}">
+            <button type="submit" class="btn-search">🔍 Search</button>
+            {% if search_query %}
+                <a href="{{ url_for('admin_flights') }}" class="btn-clear">Clear</a>
+            {% endif %}
+        </form>
+    </div>
+    
+    <a href="{{ url_for('admin_add_flight') }}" class="btn-add">
+        <span>➕</span> Add New Flight
+    </a>
+</div>
+
+{% if search_query %}
+<div class="search-results-info">
+    Found {{ flights|length }} flight(s) matching "<strong>{{ search_query }}</strong>"
+</div>
+{% endif %}
+
+<div class="table-container">
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Flight Number</th>
+                <th>Route</th>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Aircraft</th>
+                <th>Seats</th>
+                <th>Price</th>
+                <th>Airline</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for flight in flights %}
+            <tr>
+                <td>{{ flight[0] }}</td>
+                <td><strong>{{ flight[1] }}</strong></td>
+                <td>{{ flight[2] }} → {{ flight[3] }}<br><small>{{ flight[4] }} → {{ flight[5] }}</small></td>
+                <td>{{ flight[6]|format_date }}</td>
+                <td>{{ flight[7]|format_time }} - {{ flight[8]|format_time }}</td>
+                <td>{{ flight[9] }}</td>
+                <td>{{ flight[11] }}/{{ flight[10] }}</td>
+                <td>${{ "%.2f"|format(flight[12]) }}</td>
+                <td>{{ flight[13] }}</td>
+                <td>
+                    <div class="action-buttons">
+                        <a href="{{ url_for('admin_edit_flight', flight_id=flight[0]) }}" class="btn-edit">Edit</a>
+                        <a href="{{ url_for('admin_delete_flight', flight_id=flight[0]) }}" 
+                           class="btn-delete" 
+                           onclick="return confirm('Are you sure you want to delete flight {{ flight[1] }}?')">Delete</a>
+                    </div>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="10" style="text-align: center; padding: 2rem;">
+                    {% if search_query %}
+                        No flights found matching your search. <a href="{{ url_for('admin_flights') }}">View all flights</a>
+                    {% else %}
+                        No flights found. <a href="{{ url_for('admin_add_flight') }}">Add your first flight</a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+// Auto-focus search input if there's a search query
+document.addEventListener('DOMContentLoaded', function() {
+    var searchTerm = "{{ search_query|e }}".toLowerCase();
+    if (searchTerm) {
+        // Highlight search terms in the table
+        var table = document.querySelector('.admin-table');
+        var cells = table.getElementsByTagName('td');
+        
+        for (var i = 0; i < cells.length; i++) {
+            var cellText = cells[i].textContent || cells[i].innerText;
+            if (cellText.toLowerCase().includes(searchTerm)) {
+                // Don't highlight action buttons column
+                if (!cells[i].querySelector('.action-buttons')) {
+                    var regex = new RegExp('(' + searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+                    cells[i].innerHTML = cells[i].innerHTML.replace(regex, '<span class="highlight">$1</span>');
+                }
+            }
+        }
+    }
+    
+    // Focus on search input
+    var searchInput = document.querySelector('.search-input');
+    if (searchInput && !searchInput.value) {
+        searchInput.focus();
+    }
+});
+</script>
+{% endblock %}

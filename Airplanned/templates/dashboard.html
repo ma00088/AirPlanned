@@ -1,0 +1,1408 @@
+{% extends "base.html" %}
+
+{% block title %}My Bookings - AirPlanned{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="dashboard-header">
+        <h1>My Bookings</h1>
+        <p>Manage all your travel bookings in one place</p>
+        {% if session.user_name %}
+            <div class="welcome-message">
+                Welcome back, {{ session.user_name }}
+            </div>
+        {% endif %}
+    </div>
+    
+    {% if flight_bookings or hotel_bookings or car_bookings %}
+        <div class="dashboard-stats">
+            <div class="stat-card">
+                <div class="stat-number">{{ (flight_bookings|length) + (hotel_bookings|length) + (car_bookings|length) }}</div>
+                <div class="stat-label">Total Bookings</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ flight_bookings|length }}</div>
+                <div class="stat-label">Flight Bookings</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ hotel_bookings|length }}</div>
+                <div class="stat-label">Hotel Bookings</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ car_bookings|length }}</div>
+                <div class="stat-label">Car Bookings</div>
+            </div>
+        </div>
+        
+        <!-- Booking Type Tabs -->
+        <div class="booking-tabs">
+            <button class="tab-button active" onclick="showBookings('flights')">✈️ Flights</button>
+            <button class="tab-button" onclick="showBookings('hotels')">🏨 Hotels</button>
+            <button class="tab-button" onclick="showBookings('cars')">🚗 Cars</button>
+            <button class="tab-button" onclick="showBookings('all')">📋 All Bookings</button>
+        </div>
+
+        <!-- Flight Bookings Section -->
+        <div class="booking-section" id="flights-section">
+            <h2>Flight Bookings</h2>
+            {% if flight_bookings %}
+                <div class="bookings-grid">
+                    {% for booking in flight_bookings %}
+                        <div class="booking-card flight-booking" data-booking-id="{{ booking[0] }}" 
+                             data-status="{{ booking[4].lower() }}" 
+                             data-payment="{{ booking[5].lower() }}"
+                             data-departure="{{ booking[9] }}">
+                            <div class="booking-header">
+                                <div class="booking-id">Flight Booking #{{ booking[0] }}</div>
+                                <div class="booking-status status-{{ booking[4].lower() }}">
+                                    <span class="status-text">{{ booking[4] }}</span>
+                                </div>
+                            </div>
+                            
+                            <div class="booking-details">
+                                <div class="flight-info">
+                                    <h3>{{ booking[6] }}</h3>
+                                    <p class="route">{{ booking[7] }} → {{ booking[8] }}</p>
+                                    <p class="flight-date">
+                                        {{ booking[9]|format_date }}
+                                        {% if booking[10] %}
+                                            at {{ booking[10]|format_time }}
+                                        {% endif %}
+                                    </p>
+                                    <div class="departure-countdown" data-departure="{{ booking[9] }} {{ booking[10] if booking[10] else '00:00' }}">
+                                        <!-- Countdown will be populated by JavaScript -->
+                                    </div>
+                                </div>
+                                
+                                <div class="booking-info">
+                                    <div class="info-row">
+                                        <span class="info-label">Passenger:</span>
+                                        <span class="info-value">{{ booking[1] }}</span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="info-label">Seat:</span>
+                                        <span class="info-value seat-number">{{ booking[2] }}</span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="info-label">Booked:</span>
+                                        <span class="info-value">{{ booking[3]|format_date }}</span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="info-label">Payment:</span>
+                                        <span class="payment-status status-{{ booking[5].lower() }}">
+                                            <span class="status-text">{{ booking[5] }}</span>
+                                        </span>
+                                    </div>
+                                </div>
+                                
+                                <div class="booking-price">
+                                    <div class="price-amount">${{ "%.2f"|format(booking[11]) }}</div>
+                                    <div class="price-label">Total</div>
+                                </div>
+                            </div>
+                            
+                            <div class="booking-actions">
+                                {% if booking[4] == 'Confirmed' %}
+                                    {% if booking[5] == 'Pending' %}
+                                        <a href="{{ url_for('payment', booking_id=booking[0]) }}" 
+                                           class="btn btn-primary btn-sm">
+                                            Complete Payment
+                                        </a>
+                                    {% endif %}
+                                    <button class="btn btn-secondary btn-sm" 
+                                            onclick="viewBookingDetails('flight', '{{ booking[0] }}')">
+                                        View Details
+                                    </button>
+                                    <button class="btn btn-danger btn-sm"
+                                            onclick="confirmCancellation('{{ booking[6] }}', '{{ booking[0] }}')">
+                                        Cancel Booking
+                                    </button>
+                                {% elif booking[4] == 'Cancelled' %}
+                                    <span class="cancelled-note">
+                                        Booking was cancelled
+                                    </span>
+                                    <button class="btn btn-secondary btn-sm" 
+                                            onclick="viewBookingDetails('flight', '{{ booking[0] }}')">
+                                        View Details
+                                    </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="no-bookings-type">
+                    <div class="no-bookings-icon">✈️</div>
+                    <h3>No flight bookings yet</h3>
+                    <p>Ready to explore the world? Book your first flight.</p>
+                    <a href="{{ url_for('index') }}" class="btn btn-primary">Book a Flight</a>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Hotel Bookings Section -->
+        <div class="booking-section" id="hotels-section" style="display: none;">
+            <h2>Hotel Bookings</h2>
+            {% if hotel_bookings %}
+                <div class="bookings-grid">
+                    {% for booking in hotel_bookings %}
+                        <div class="booking-card hotel-booking" data-booking-id="{{ booking[0] }}">
+                            <div class="booking-header">
+                                <div class="booking-id">Hotel Booking #{{ booking[0] }}</div>
+                                <div class="booking-status status-{{ booking[7].lower() if booking[7] else 'confirmed' }}">
+                                    <span class="status-text">{{ booking[7] if booking[7] else 'Confirmed' }}</span>
+                                </div>
+                            </div>
+                            
+                            <div class="booking-details">
+                                <div class="hotel-info">
+                                    <h3>{{ booking[8] }}</h3>
+                                    <p class="hotel-location">📍 {{ booking[9] }}</p>
+                                    <p class="hotel-dates">
+                                        {{ booking[2]|format_date }} - {{ booking[3]|format_date }}
+                                    </p>
+                                    <div class="stay-duration">
+                                        {% set nights = (booking[3] - booking[2]).days %}
+                                        {{ nights }} night{{ 's' if nights != 1 else '' }}
+                                    </div>
+                                </div>
+                                
+                                <div class="booking-info">
+                                    <div class="info-row">
+                                        <span class="info-label">Guest:</span>
+                                        <span class="info-value">{{ booking[1] }}</span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="info-label">Room Type:</span>
+                                        <span class="info-value room-type">{{ booking[4].title() }}</span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="info-label">Check-in:</span>
+                                        <span class="info-value">{{ booking[2]|format_date }}</span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="info-label">Check-out:</span>
+                                        <span class="info-value">{{ booking[3]|format_date }}</span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="info-label">Booked:</span>
+                                        <span class="info-value">{{ booking[5]|format_date }}</span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="info-label">Payment:</span>
+                                        <span class="payment-status status-{{ booking[10].lower() if booking[10] else 'pending' }}">
+                                            <span class="status-text">{{ booking[10] if booking[10] else 'Pending' }}</span>
+                                        </span>
+                                    </div>
+                                </div>
+                                
+                                <div class="booking-price">
+                                    <div class="price-amount">${{ "%.2f"|format(booking[6]) }}</div>
+                                    <div class="price-label">Total</div>
+                                </div>
+                            </div>
+                            
+                            <div class="booking-actions">
+                                {% if booking[7] != 'Cancelled' %}
+                                    {% if booking[10] == 'Pending' %}
+                                        <a href="{{ url_for('hotel_payment', booking_id=booking[0]) }}" 
+                                           class="btn btn-primary btn-sm">
+                                            Complete Payment
+                                        </a>
+                                    {% endif %}
+                                    <button class="btn btn-secondary btn-sm" 
+                                            onclick="viewBookingDetails('hotel', '{{ booking[0] }}')">
+                                        View Details
+                                    </button>
+                                    <button class="btn btn-danger btn-sm"
+                                            onclick="confirmHotelCancellation('{{ booking[8] }}', '{{ booking[0] }}')">
+                                        Cancel Booking
+                                    </button>
+                                {% else %}
+                                    <span class="cancelled-note">
+                                        Booking was cancelled
+                                    </span>
+                                    <button class="btn btn-secondary btn-sm" 
+                                            onclick="viewBookingDetails('hotel', '{{ booking[0] }}')">
+                                        View Details
+                                    </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="no-bookings-type">
+                    <div class="no-bookings-icon">🏨</div>
+                    <h3>No hotel bookings yet</h3>
+                    <p>Find the perfect place to stay for your travels.</p>
+                    <a href="{{ url_for('hotels') }}" class="btn btn-primary">Book a Hotel</a>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Car Bookings Section -->
+        <div class="booking-section" id="cars-section" style="display: none;">
+            <h2>Car Rental Bookings</h2>
+            {% if car_bookings %}
+                <div class="bookings-grid">
+                    {% for booking in car_bookings %}
+                        <div class="booking-card car-booking" data-booking-id="{{ booking[0] }}">
+                            <div class="booking-header">
+                                <div class="booking-id">Car Booking #{{ booking[0] }}</div>
+                                <div class="booking-status status-{{ booking[7].lower() if booking[7] else 'confirmed' }}">
+                                    <span class="status-text">{{ booking[7] if booking[7] else 'Confirmed' }}</span>
+                                </div>
+                            </div>
+                            
+                            <div class="booking-details">
+                                <div class="car-info">
+                                    <h3>{{ booking[8] }}</h3>
+                                    <p class="car-location">📍 {{ booking[9] }}</p>
+                                    <p class="car-dates">
+                                        {{ booking[2]|format_date }} - {{ booking[3]|format_date }}
+                                    </p>
+                                    <div class="rental-duration">
+                                        {% set days = (booking[3] - booking[2]).days %}
+                                        {{ days }} day{{ 's' if days != 1 else '' }}
+                                    </div>
+                                </div>
+                                
+                                <div class="booking-info">
+                                    <div class="info-row">
+                                        <span class="info-label">Renter:</span>
+                                        <span class="info-value">{{ booking[1] }}</span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="info-label">Car Type:</span>
+                                        <span class="info-value car-type">{{ booking[4] }}</span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="info-label">Pickup:</span>
+                                        <span class="info-value">{{ booking[2]|format_date }}</span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="info-label">Return:</span>
+                                        <span class="info-value">{{ booking[3]|format_date }}</span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="info-label">Booked:</span>
+                                        <span class="info-value">{{ booking[5]|format_date }}</span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="info-label">Payment:</span>
+                                        <span class="payment-status status-{{ booking[10].lower() if booking[10] else 'pending' }}">
+                                            <span class="status-text">{{ booking[10] if booking[10] else 'Pending' }}</span>
+                                        </span>
+                                    </div>
+                                </div>
+                                
+                                <div class="booking-price">
+                                    <div class="price-amount">${{ "%.2f"|format(booking[6]) }}</div>
+                                    <div class="price-label">Total</div>
+                                </div>
+                            </div>
+                            
+                            <div class="booking-actions">
+                                {% if booking[7] != 'Cancelled' %}
+                                    {% if booking[10] == 'Pending' %}
+                                        <a href="{{ url_for('car_payment', booking_id=booking[0]) }}" 
+                                           class="btn btn-primary btn-sm">
+                                            Complete Payment
+                                        </a>
+                                    {% endif %}
+                                    <button class="btn btn-secondary btn-sm" 
+                                            onclick="viewBookingDetails('car', '{{ booking[0] }}')">
+                                        View Details
+                                    </button>
+                                    <button class="btn btn-danger btn-sm"
+                                            onclick="confirmCarCancellation('{{ booking[8] }}', '{{ booking[0] }}')">
+                                        Cancel Booking
+                                    </button>
+                                {% else %}
+                                    <span class="cancelled-note">
+                                        Booking was cancelled
+                                    </span>
+                                    <button class="btn btn-secondary btn-sm" 
+                                            onclick="viewBookingDetails('car', '{{ booking[0] }}')">
+                                        View Details
+                                    </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="no-bookings-type">
+                    <div class="no-bookings-icon">🚗</div>
+                    <h3>No car rental bookings yet</h3>
+                    <p>Get the freedom to explore with a rental car.</p>
+                    <a href="{{ url_for('cars') }}" class="btn btn-primary">Rent a Car</a>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- All Bookings Section -->
+        <div class="booking-section" id="all-section" style="display: none;">
+            <h2>All Bookings</h2>
+            <div class="bookings-grid">
+                <!-- Flight Bookings -->
+                {% for booking in flight_bookings %}
+                    <div class="booking-card flight-booking all-booking">
+                        <div class="booking-type-badge">Flight</div>
+                        <div class="booking-header">
+                            <div class="booking-id">Booking #{{ booking[0] }}</div>
+                            <div class="booking-status status-{{ booking[4].lower() }}">
+                                <span class="status-text">{{ booking[4] }}</span>
+                            </div>
+                        </div>
+                        <div class="booking-details">
+                            <div class="booking-info">
+                                <h3>{{ booking[6] }}</h3>
+                                <p>{{ booking[7] }} → {{ booking[8] }}</p>
+                                <p>{{ booking[9]|format_date }}</p>
+                                <div class="payment-status status-{{ booking[5].lower() }}">
+                                    <span class="status-text">{{ booking[5] }}</span>
+                                </div>
+                                <div class="price-amount">${{ "%.2f"|format(booking[11]) }}</div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+
+                <!-- Hotel Bookings -->
+                {% for booking in hotel_bookings %}
+                    <div class="booking-card hotel-booking all-booking">
+                        <div class="booking-type-badge hotel">Hotel</div>
+                        <div class="booking-header">
+                            <div class="booking-id">Booking #{{ booking[0] }}</div>
+                            <div class="booking-status status-{{ booking[7].lower() if booking[7] else 'confirmed' }}">
+                                <span class="status-text">{{ booking[7] if booking[7] else 'Confirmed' }}</span>
+                            </div>
+                        </div>
+                        <div class="booking-details">
+                            <div class="booking-info">
+                                <h3>{{ booking[8] }}</h3>
+                                <p>{{ booking[9] }}</p>
+                                <p>{{ booking[2]|format_date }} - {{ booking[3]|format_date }}</p>
+                                <div class="payment-status status-{{ booking[10].lower() if booking[10] else 'pending' }}">
+                                    <span class="status-text">{{ booking[10] if booking[10] else 'Pending' }}</span>
+                                </div>
+                                <div class="price-amount">${{ "%.2f"|format(booking[6]) }}</div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+
+                <!-- Car Bookings -->
+                {% for booking in car_bookings %}
+                    <div class="booking-card car-booking all-booking">
+                        <div class="booking-type-badge car">Car</div>
+                        <div class="booking-header">
+                            <div class="booking-id">Booking #{{ booking[0] }}</div>
+                            <div class="booking-status status-{{ booking[7].lower() if booking[7] else 'confirmed' }}">
+                                <span class="status-text">{{ booking[7] if booking[7] else 'Confirmed' }}</span>
+                            </div>
+                        </div>
+                        <div class="booking-details">
+                            <div class="booking-info">
+                                <h3>{{ booking[8] }}</h3>
+                                <p>{{ booking[9] }}</p>
+                                <p>{{ booking[2]|format_date }} - {{ booking[3]|format_date }}</p>
+                                <div class="payment-status status-{{ booking[10].lower() if booking[10] else 'pending' }}">
+                                    <span class="status-text">{{ booking[10] if booking[10] else 'Pending' }}</span>
+                                </div>
+                                <div class="price-amount">${{ "%.2f"|format(booking[6]) }}</div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div class="dashboard-actions">
+            <a href="{{ url_for('index') }}" class="btn btn-primary btn-large">
+                Book Another Flight
+            </a>
+            <a href="{{ url_for('hotels') }}" class="btn btn-secondary">
+                Browse Hotels
+            </a>
+            <a href="{{ url_for('cars') }}" class="btn btn-secondary">
+                Rent a Car
+            </a>
+            <button class="btn btn-secondary" onclick="exportBookings()">
+                Export Bookings
+            </button>
+            <button class="btn btn-secondary" onclick="printBookings()">
+                Print Summary
+            </button>
+        </div>
+    {% else %}
+        <div class="no-bookings">
+            <div class="no-bookings-icon">✈</div>
+            <h3>No bookings yet</h3>
+            <p>Ready for your next adventure? Start by booking your first trip.</p>
+            <div class="no-bookings-actions">
+                <a href="{{ url_for('index') }}" class="btn btn-primary btn-large">
+                    Book Your First Flight
+                </a>
+                <a href="{{ url_for('hotels') }}" class="btn btn-secondary">
+                    Browse Hotels
+                </a>
+                <a href="{{ url_for('cars') }}" class="btn btn-secondary">
+                    Rent a Car
+                </a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Booking Details Modal -->
+<div id="bookingModal" class="modal" style="display: none;" role="dialog" aria-labelledby="modalTitle" aria-hidden="true">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modalTitle">Booking Details</h3>
+            <button class="modal-close" onclick="closeBookingModal()" aria-label="Close modal">&times;</button>
+        </div>
+        <div class="modal-body" id="modalBookingDetails">
+            <!-- Details will be populated by JavaScript -->
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeBookingModal()">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden data containers -->
+<div id="bookingData" style="display: none;">
+    <!-- Flight Bookings Data -->
+    {% for booking in flight_bookings %}
+        <div class="flight-booking-data"
+             data-id="{{ booking[0] }}"
+             data-passenger="{{ booking[1] }}"
+             data-seat="{{ booking[2] }}"
+             data-booking-date="{{ booking[3] }}"
+             data-status="{{ booking[4] }}"
+             data-payment="{{ booking[5] }}"
+             data-flight="{{ booking[6] }}"
+             data-origin="{{ booking[7] }}"
+             data-destination="{{ booking[8] }}"
+             data-departure="{{ booking[9] }}"
+             data-time="{{ booking[10] if booking[10] else '' }}"
+             data-price="{{ booking[11] }}">
+        </div>
+    {% endfor %}
+    
+    <!-- Hotel Bookings Data -->
+    {% for booking in hotel_bookings %}
+        <div class="hotel-booking-data"
+             data-id="{{ booking[0] }}"
+             data-guest="{{ booking[1] }}"
+             data-checkin="{{ booking[2] }}"
+             data-checkout="{{ booking[3] }}"
+             data-room-type="{{ booking[4] }}"
+             data-booking-date="{{ booking[5] }}"
+             data-price="{{ booking[6] }}"
+             data-status="{{ booking[7] if booking[7] else 'Confirmed' }}"
+             data-hotel="{{ booking[8] }}"
+             data-location="{{ booking[9] }}"
+             data-payment="{{ booking[10] if booking[10] else 'Pending' }}">
+        </div>
+    {% endfor %}
+    
+    <!-- Car Bookings Data -->
+    {% for booking in car_bookings %}
+        <div class="car-booking-data"
+             data-id="{{ booking[0] }}"
+             data-renter="{{ booking[1] }}"
+             data-pickup="{{ booking[2] }}"
+             data-return="{{ booking[3] }}"
+             data-car-type="{{ booking[4] }}"
+             data-booking-date="{{ booking[5] }}"
+             data-price="{{ booking[6] }}"
+             data-status="{{ booking[7] if booking[7] else 'Confirmed' }}"
+             data-company="{{ booking[8] }}"
+             data-location="{{ booking[9] }}"
+             data-payment="{{ booking[10] if booking[10] else 'Pending' }}">
+        </div>
+    {% endfor %}
+</div>
+
+<script>
+// Tab functionality
+function showBookings(type) {
+    // Hide all sections
+    document.querySelectorAll('.booking-section').forEach(section => {
+        section.style.display = 'none';
+    });
+    
+    // Remove active class from all tabs
+    document.querySelectorAll('.tab-button').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    
+    // Show selected section
+    document.getElementById(type + '-section').style.display = 'block';
+    
+    // Add active class to clicked tab
+    event.target.classList.add('active');
+}
+
+// Load bookings data
+var flightBookingsData = [];
+var hotelBookingsData = [];
+var carBookingsData = [];
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadBookingsFromDOM();
+    initializeCountdowns();
+});
+
+function loadBookingsFromDOM() {
+    // Load flight bookings
+    var flightDataItems = document.querySelectorAll('.flight-booking-data');
+    flightBookingsData = [];
+    
+    flightDataItems.forEach(function(item) {
+        var booking = {
+            id: parseInt(item.dataset.id),
+            passenger: item.dataset.passenger,
+            seat: item.dataset.seat,
+            bookingDate: item.dataset.bookingDate,
+            status: item.dataset.status,
+            payment: item.dataset.payment,
+            flight: item.dataset.flight,
+            origin: item.dataset.origin,
+            destination: item.dataset.destination,
+            departure: item.dataset.departure,
+            time: item.dataset.time,
+            price: parseFloat(item.dataset.price)
+        };
+        flightBookingsData.push(booking);
+    });
+    
+    // Load hotel bookings
+    var hotelDataItems = document.querySelectorAll('.hotel-booking-data');
+    hotelBookingsData = [];
+    
+    hotelDataItems.forEach(function(item) {
+        var booking = {
+            id: parseInt(item.dataset.id),
+            guest: item.dataset.guest,
+            checkin: item.dataset.checkin,
+            checkout: item.dataset.checkout,
+            roomType: item.dataset.roomType,
+            bookingDate: item.dataset.bookingDate,
+            price: parseFloat(item.dataset.price),
+            status: item.dataset.status,
+            hotel: item.dataset.hotel,
+            location: item.dataset.location,
+            payment: item.dataset.payment
+        };
+        hotelBookingsData.push(booking);
+    });
+    
+    // Load car bookings
+    var carDataItems = document.querySelectorAll('.car-booking-data');
+    carBookingsData = [];
+    
+    carDataItems.forEach(function(item) {
+        var booking = {
+            id: parseInt(item.dataset.id),
+            renter: item.dataset.renter,
+            pickup: item.dataset.pickup,
+            return: item.dataset.return,
+            carType: item.dataset.carType,
+            bookingDate: item.dataset.bookingDate,
+            price: parseFloat(item.dataset.price),
+            status: item.dataset.status,
+            company: item.dataset.company,
+            location: item.dataset.location,
+            payment: item.dataset.payment
+        };
+        carBookingsData.push(booking);
+    });
+}
+
+function initializeCountdowns() {
+    const countdownElements = document.querySelectorAll('.departure-countdown');
+    
+    countdownElements.forEach(element => {
+        const departureStr = element.dataset.departure;
+        if (departureStr && departureStr !== 'None None') {
+            updateCountdown(element, departureStr);
+            setInterval(() => updateCountdown(element, departureStr), 60000);
+        }
+    });
+}
+
+function updateCountdown(element, departureStr) {
+    try {
+        const departureDate = new Date(departureStr);
+        const now = new Date();
+        const timeDiff = departureDate.getTime() - now.getTime();
+        
+        if (timeDiff > 0) {
+            const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            
+            if (days > 0) {
+                element.innerHTML = `<span class="countdown-text">Departs in ${days} day${days > 1 ? 's' : ''}</span>`;
+                element.className = 'departure-countdown upcoming';
+            } else if (hours > 0) {
+                element.innerHTML = `<span class="countdown-text">Departs in ${hours} hour${hours > 1 ? 's' : ''}</span>`;
+                element.className = 'departure-countdown soon';
+            } else {
+                element.innerHTML = `<span class="countdown-text">Departs soon</span>`;
+                element.className = 'departure-countdown imminent';
+            }
+        } else {
+            element.innerHTML = `<span class="countdown-text">Departed</span>`;
+            element.className = 'departure-countdown departed';
+        }
+    } catch (error) {
+        element.innerHTML = '';
+    }
+}
+
+function confirmCancellation(flightNumber, bookingId) {
+    const confirmMessage = `Cancel Flight Booking Confirmation
+    
+Flight: ${flightNumber}
+Booking ID: #${bookingId}
+
+Are you sure you want to cancel this booking?
+
+⚠️ Important Notes:
+• This action cannot be undone
+• Refunds will be processed according to our cancellation policy
+• You will receive a confirmation email once processed
+
+Do you want to proceed with the cancellation?`;
+
+    var result = confirm(confirmMessage);
+    
+    if (result) {
+        window.location.href = `/cancel_booking/${bookingId}`;
+    }
+}
+
+function confirmHotelCancellation(hotelName, bookingId) {
+    const confirmMessage = `Cancel Hotel Booking Confirmation
+    
+Hotel: ${hotelName}
+Booking ID: #${bookingId}
+
+Are you sure you want to cancel this booking?
+
+⚠️ Important Notes:
+• This action cannot be undone
+• Refunds will be processed according to our cancellation policy
+
+Do you want to proceed with the cancellation?`;
+
+    var result = confirm(confirmMessage);
+    
+    if (result) {
+        // You'll need to create a cancel_hotel_booking route
+        alert('Hotel booking cancellation functionality will be implemented.');
+    }
+}
+
+function confirmCarCancellation(companyName, bookingId) {
+    const confirmMessage = `Cancel Car Rental Booking Confirmation
+    
+Company: ${companyName}
+Booking ID: #${bookingId}
+
+Are you sure you want to cancel this booking?
+
+⚠️ Important Notes:
+• This action cannot be undone
+• Refunds will be processed according to our cancellation policy
+
+Do you want to proceed with the cancellation?`;
+
+    var result = confirm(confirmMessage);
+    
+    if (result) {
+        // You'll need to create a cancel_car_booking route
+        alert('Car booking cancellation functionality will be implemented.');
+    }
+}
+
+function viewBookingDetails(type, bookingId) {
+    var booking = null;
+    var bookingIdNum = parseInt(bookingId);
+    
+    if (type === 'flight') {
+        booking = flightBookingsData.find(function(b) { return b.id === bookingIdNum; });
+        showFlightBookingDetails(booking);
+    } else if (type === 'hotel') {
+        booking = hotelBookingsData.find(function(b) { return b.id === bookingIdNum; });
+        showHotelBookingDetails(booking);
+    } else if (type === 'car') {
+        booking = carBookingsData.find(function(b) { return b.id === bookingIdNum; });
+        showCarBookingDetails(booking);
+    }
+    
+    if (!booking) {
+        alert('Booking details not found');
+        return;
+    }
+    
+    document.getElementById('bookingModal').style.display = 'flex';
+    document.getElementById('bookingModal').setAttribute('aria-hidden', 'false');
+    document.querySelector('.modal-close').focus();
+}
+
+function showFlightBookingDetails(booking) {
+    const modalBody = document.getElementById('modalBookingDetails');
+    modalBody.innerHTML = `
+        <div class="booking-detail-card">
+            <h4>Flight Information</h4>
+            <div class="detail-grid">
+                <div class="detail-item">
+                    <label>Booking ID:</label>
+                    <span class="booking-ref">#${booking.id}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Flight Number:</label>
+                    <span>${booking.flight}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Route:</label>
+                    <span>${booking.origin} → ${booking.destination}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Departure Date:</label>
+                    <span>${new Date(booking.departure).toLocaleDateString('en-US', { 
+                        weekday: 'long', 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                    })}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Departure Time:</label>
+                    <span>${booking.time || 'Not specified'}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Passenger Name:</label>
+                    <span>${booking.passenger}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Seat Number:</label>
+                    <span class="seat-highlight">${booking.seat}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Booking Status:</label>
+                    <span class="status-${booking.status.toLowerCase()}">${booking.status}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Payment Status:</label>
+                    <span class="status-${booking.payment.toLowerCase()}">${booking.payment}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Total Amount:</label>
+                    <span class="price-highlight">${booking.price.toFixed(2)}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Booking Date:</label>
+                    <span>${new Date(booking.bookingDate).toLocaleDateString()}</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="booking-actions-detailed">
+            <h4>Actions</h4>
+            <div class="action-buttons">
+                ${booking.payment === 'Pending' ? 
+                    `<a href="/payment/${booking.id}" class="btn btn-primary">Complete Payment</a>` : 
+                    ''
+                }
+                <button class="btn btn-secondary" onclick="printBooking(${booking.id})">Print Booking</button>
+                ${booking.status === 'Confirmed' ? 
+                    `<button class="btn btn-danger" onclick="confirmCancellation('${booking.flight}', ${booking.id})">Cancel Booking</button>` : 
+                    ''
+                }
+            </div>
+        </div>
+    `;
+}
+
+function showHotelBookingDetails(booking) {
+    const modalBody = document.getElementById('modalBookingDetails');
+    modalBody.innerHTML = `
+        <div class="booking-detail-card">
+            <h4>Hotel Booking Information</h4>
+            <div class="detail-grid">
+                <div class="detail-item">
+                    <label>Booking ID:</label>
+                    <span class="booking-ref">#${booking.id}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Hotel:</label>
+                    <span>${booking.hotel}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Location:</label>
+                    <span>${booking.location}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Guest Name:</label>
+                    <span>${booking.guest}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Room Type:</label>
+                    <span>${booking.roomType.charAt(0).toUpperCase() + booking.roomType.slice(1)}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Check-in Date:</label>
+                    <span>${new Date(booking.checkin).toLocaleDateString('en-US', { 
+                        weekday: 'long', 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                    })}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Check-out Date:</label>
+                    <span>${new Date(booking.checkout).toLocaleDateString('en-US', { 
+                        weekday: 'long', 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                    })}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Number of Nights:</label>
+                    <span>${Math.ceil((new Date(booking.checkout) - new Date(booking.checkin)) / (1000 * 60 * 60 * 24))} nights</span>
+                </div>
+                <div class="detail-item">
+                    <label>Status:</label>
+                    <span class="status-${booking.status.toLowerCase()}">${booking.status}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Payment Status:</label>
+                    <span class="status-${booking.payment.toLowerCase()}">${booking.payment}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Total Amount:</label>
+                    <span class="price-highlight">${booking.price.toFixed(2)}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Booking Date:</label>
+                    <span>${new Date(booking.bookingDate).toLocaleDateString()}</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="booking-actions-detailed">
+            <h4>Actions</h4>
+            <div class="action-buttons">
+                ${booking.payment === 'Pending' ? 
+                    `<a href="/hotel_payment/${booking.id}" class="btn btn-primary">Complete Payment</a>` : 
+                    ''
+                }
+                <button class="btn btn-secondary" onclick="printHotelBooking(${booking.id})">Print Booking</button>
+                ${booking.status !== 'Cancelled' ? 
+                    `<button class="btn btn-danger" onclick="confirmHotelCancellation('${booking.hotel}', ${booking.id})">Cancel Booking</button>` : 
+                    ''
+                }
+            </div>
+        </div>
+    `;
+}
+
+function showCarBookingDetails(booking) {
+    const modalBody = document.getElementById('modalBookingDetails');
+    modalBody.innerHTML = `
+        <div class="booking-detail-card">
+            <h4>Car Rental Information</h4>
+            <div class="detail-grid">
+                <div class="detail-item">
+                    <label>Booking ID:</label>
+                    <span class="booking-ref">#${booking.id}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Rental Company:</label>
+                    <span>${booking.company}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Location:</label>
+                    <span>${booking.location}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Renter Name:</label>
+                    <span>${booking.renter}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Car Type:</label>
+                    <span>${booking.carType}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Pickup Date:</label>
+                    <span>${new Date(booking.pickup).toLocaleDateString('en-US', { 
+                        weekday: 'long', 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                    })}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Return Date:</label>
+                    <span>${new Date(booking.return).toLocaleDateString('en-US', { 
+                        weekday: 'long', 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                    })}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Rental Duration:</label>
+                    <span>${Math.ceil((new Date(booking.return) - new Date(booking.pickup)) / (1000 * 60 * 60 * 24))} days</span>
+                </div>
+                <div class="detail-item">
+                    <label>Status:</label>
+                    <span class="status-${booking.status.toLowerCase()}">${booking.status}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Payment Status:</label>
+                    <span class="status-${booking.payment.toLowerCase()}">${booking.payment}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Total Amount:</label>
+                    <span class="price-highlight">${booking.price.toFixed(2)}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Booking Date:</label>
+                    <span>${new Date(booking.bookingDate).toLocaleDateString()}</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="booking-actions-detailed">
+            <h4>Actions</h4>
+            <div class="action-buttons">
+                ${booking.payment === 'Pending' ? 
+                    `<a href="/car_payment/${booking.id}" class="btn btn-primary">Complete Payment</a>` : 
+                    ''
+                }
+                <button class="btn btn-secondary" onclick="printCarBooking(${booking.id})">Print Booking</button>
+                ${booking.status !== 'Cancelled' ? 
+                    `<button class="btn btn-danger" onclick="confirmCarCancellation('${booking.company}', ${booking.id})">Cancel Booking</button>` : 
+                    ''
+                }
+            </div>
+        </div>
+    `;
+}
+
+function closeBookingModal() {
+    const modal = document.getElementById('bookingModal');
+    modal.style.display = 'none';
+    modal.setAttribute('aria-hidden', 'true');
+}
+
+function printBooking(bookingId) {
+    const booking = flightBookingsData.find(b => b.id === bookingId);
+    if (booking) {
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <html>
+                <head>
+                    <title>Flight Booking #${booking.id} - AirPlanned</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; margin: 20px; }
+                        .header { text-align: center; margin-bottom: 30px; }
+                        .booking-info { margin: 20px 0; }
+                        .info-row { margin: 10px 0; }
+                        .label { font-weight: bold; }
+                        .important { background: #fffbeb; padding: 15px; border: 1px solid #fbbf24; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h1>✈ AirPlanned</h1>
+                        <h2>Flight Booking Confirmation</h2>
+                        <p>Booking ID: #${booking.id}</p>
+                    </div>
+                    <div class="booking-info">
+                        <div class="info-row"><span class="label">Flight:</span> ${booking.flight}</div>
+                        <div class="info-row"><span class="label">Route:</span> ${booking.origin} → ${booking.destination}</div>
+                        <div class="info-row"><span class="label">Date:</span> ${new Date(booking.departure).toLocaleDateString()}</div>
+                        <div class="info-row"><span class="label">Time:</span> ${booking.time || 'Not specified'}</div>
+                        <div class="info-row"><span class="label">Passenger:</span> ${booking.passenger}</div>
+                        <div class="info-row"><span class="label">Seat:</span> ${booking.seat}</div>
+                        <div class="info-row"><span class="label">Status:</span> ${booking.status}</div>
+                        <div class="info-row"><span class="label">Payment:</span> ${booking.payment}</div>
+                        <div class="info-row"><span class="label">Total:</span> ${booking.price.toFixed(2)}</div>
+                    </div>
+                    <div class="important">
+                        <h3>Important Reminders:</h3>
+                        <ul>
+                            <li>Arrive at airport 2 hours before domestic flights</li>
+                            <li>Check-in opens 24 hours before departure</li>
+                            <li>Bring valid ID matching booking name</li>
+                            <li>Contact support: +1 (800) 247-7526</li>
+                        </ul>
+                    </div>
+                </body>
+            </html>
+        `);
+        printWindow.document.close();
+        printWindow.print();
+    }
+}
+
+function printHotelBooking(bookingId) {
+    const booking = hotelBookingsData.find(b => b.id === bookingId);
+    if (booking) {
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <html>
+                <head>
+                    <title>Hotel Booking #${booking.id} - AirPlanned</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; margin: 20px; }
+                        .header { text-align: center; margin-bottom: 30px; }
+                        .booking-info { margin: 20px 0; }
+                        .info-row { margin: 10px 0; }
+                        .label { font-weight: bold; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h1>🏨 AirPlanned</h1>
+                        <h2>Hotel Booking Confirmation</h2>
+                        <p>Booking ID: #${booking.id}</p>
+                    </div>
+                    <div class="booking-info">
+                        <div class="info-row"><span class="label">Hotel:</span> ${booking.hotel}</div>
+                        <div class="info-row"><span class="label">Location:</span> ${booking.location}</div>
+                        <div class="info-row"><span class="label">Guest:</span> ${booking.guest}</div>
+                        <div class="info-row"><span class="label">Room Type:</span> ${booking.roomType}</div>
+                        <div class="info-row"><span class="label">Check-in:</span> ${new Date(booking.checkin).toLocaleDateString()}</div>
+                        <div class="info-row"><span class="label">Check-out:</span> ${new Date(booking.checkout).toLocaleDateString()}</div>
+                        <div class="info-row"><span class="label">Payment:</span> ${booking.payment}</div>
+                        <div class="info-row"><span class="label">Total:</span> ${booking.price.toFixed(2)}</div>
+                    </div>
+                </body>
+            </html>
+        `);
+        printWindow.document.close();
+        printWindow.print();
+    }
+}
+
+function printCarBooking(bookingId) {
+    const booking = carBookingsData.find(b => b.id === bookingId);
+    if (booking) {
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <html>
+                <head>
+                    <title>Car Booking #${booking.id} - AirPlanned</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; margin: 20px; }
+                        .header { text-align: center; margin-bottom: 30px; }
+                        .booking-info { margin: 20px 0; }
+                        .info-row { margin: 10px 0; }
+                        .label { font-weight: bold; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h1>🚗 AirPlanned</h1>
+                        <h2>Car Rental Confirmation</h2>
+                        <p>Booking ID: #${booking.id}</p>
+                    </div>
+                    <div class="booking-info">
+                        <div class="info-row"><span class="label">Company:</span> ${booking.company}</div>
+                        <div class="info-row"><span class="label">Location:</span> ${booking.location}</div>
+                        <div class="info-row"><span class="label">Renter:</span> ${booking.renter}</div>
+                        <div class="info-row"><span class="label">Car Type:</span> ${booking.carType}</div>
+                        <div class="info-row"><span class="label">Pickup:</span> ${new Date(booking.pickup).toLocaleDateString()}</div>
+                        <div class="info-row"><span class="label">Return:</span> ${new Date(booking.return).toLocaleDateString()}</div>
+                        <div class="info-row"><span class="label">Payment:</span> ${booking.payment}</div>
+                        <div class="info-row"><span class="label">Total:</span> ${booking.price.toFixed(2)}</div>
+                    </div>
+                </body>
+            </html>
+        `);
+        printWindow.document.close();
+        printWindow.print();
+    }
+}
+
+function exportBookings() {
+    if (flightBookingsData.length === 0 && hotelBookingsData.length === 0 && carBookingsData.length === 0) {
+        alert('No bookings to export');
+        return;
+    }
+    
+    let csvContent = "Type,Booking ID,Name,Details,Date,Amount,Status,Payment\n";
+    
+    // Add flight bookings
+    flightBookingsData.forEach(booking => {
+        const row = [
+            'Flight',
+            booking.id,
+            `"${booking.passenger}"`,
+            `"${booking.flight} - ${booking.origin} to ${booking.destination}"`,
+            new Date(booking.departure).toLocaleDateString(),
+            booking.price.toFixed(2),
+            booking.status,
+            booking.payment
+        ].join(',');
+        csvContent += row + "\n";
+    });
+    
+    // Add hotel bookings
+    hotelBookingsData.forEach(booking => {
+        const row = [
+            'Hotel',
+            booking.id,
+            `"${booking.guest}"`,
+            `"${booking.hotel} - ${booking.location}"`,
+            new Date(booking.checkin).toLocaleDateString(),
+            booking.price.toFixed(2),
+            booking.status,
+            booking.payment
+        ].join(',');
+        csvContent += row + "\n";
+    });
+    
+    // Add car bookings
+    carBookingsData.forEach(booking => {
+        const row = [
+            'Car',
+            booking.id,
+            `"${booking.renter}"`,
+            `"${booking.company} - ${booking.carType}"`,
+            new Date(booking.pickup).toLocaleDateString(),
+            booking.price.toFixed(2),
+            booking.status,
+            booking.payment
+        ].join(',');
+        csvContent += row + "\n";
+    });
+    
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `airplanned_all_bookings_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+}
+
+function printBookings() {
+    window.print();
+}
+
+// Close modal when clicking outside
+document.getElementById('bookingModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeBookingModal();
+    }
+});
+
+// Keyboard navigation
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        const modal = document.getElementById('bookingModal');
+        if (modal.style.display !== 'none') {
+            closeBookingModal();
+        }
+    }
+});
+
+setInterval(function() {
+    initializeCountdowns();
+}, 60000);
+</script>
+
+<style>
+.booking-tabs {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    background: white;
+    padding: 1rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.tab-button {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    background: #f8fafc;
+    color: #6b7280;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    flex: 1;
+    text-align: center;
+}
+
+.tab-button:hover {
+    background: #e2e8f0;
+    color: #374151;
+}
+
+.tab-button.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.booking-section {
+    margin-bottom: 3rem;
+}
+
+.booking-section h2 {
+    color: #1f2937;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.no-bookings-type {
+    text-align: center;
+    padding: 3rem 2rem;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    margin: 2rem 0;
+}
+
+.no-bookings-type .no-bookings-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.no-bookings-type h3 {
+    color: #374151;
+    margin-bottom: 1rem;
+}
+
+.no-bookings-type p {
+    color: #6b7280;
+    margin-bottom: 1.5rem;
+}
+
+.hotel-booking, .car-booking {
+    border-left: 4px solid #10b981;
+}
+
+.flight-booking {
+    border-left: 4px solid #667eea;
+}
+
+.booking-type-badge {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: #667eea;
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.booking-type-badge.hotel {
+    background: #10b981;
+}
+
+.booking-type-badge.car {
+    background: #f59e0b;
+}
+
+.all-booking {
+    position: relative;
+}
+
+.all-booking .booking-details {
+    grid-template-columns: 1fr;
+}
+
+.all-booking .booking-info h3 {
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+}
+
+.all-booking .booking-info p {
+    margin: 0.25rem 0;
+    font-size: 0.9rem;
+    color: #6b7280;
+}
+
+.room-type, .car-type {
+    background: #667eea;
+    color: white;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 0.8rem;
+}
+
+.stay-duration, .rental-duration {
+    background: #f0fdf4;
+    color: #059669;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-top: 0.5rem;
+    display: inline-block;
+}
+
+.welcome-message {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-top: 1rem;
+    text-align: center;
+    font-weight: 500;
+}
+
+@media (max-width: 768px) {
+    .booking-tabs {
+        flex-direction: column;
+    }
+    
+    .tab-button {
+        margin-bottom: 0.5rem;
+    }
+    
+    .dashboard-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .booking-details {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .booking-actions {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .action-buttons {
+        grid-template-columns: 1fr;
+    }
+    
+    .detail-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}

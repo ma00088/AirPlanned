@@ -1,0 +1,208 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Hotels - Admin Panel{% endblock %}
+{% block header %}Manage Hotels{% endblock %}
+
+{% block content %}
+<style>
+    .admin-controls {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+    
+    .search-container {
+        flex: 1;
+        max-width: 500px;
+    }
+    
+    .search-form {
+        display: flex;
+        gap: 0.5rem;
+    }
+    
+    .search-input {
+        flex: 1;
+        padding: 0.75rem;
+        border: 2px solid #e2e8f0;
+        border-radius: 6px;
+        font-size: 1rem;
+    }
+    
+    .search-input:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    .btn-search {
+        background: #667eea;
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+    
+    .btn-search:hover {
+        background: #5a67d8;
+    }
+    
+    .btn-clear {
+        background: #6b7280;
+        color: white;
+        padding: 0.75rem 1rem;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+    }
+    
+    .btn-clear:hover {
+        background: #4b5563;
+    }
+    
+    .search-results-info {
+        background: #f0f9ff;
+        padding: 1rem;
+        border-radius: 6px;
+        margin-bottom: 1rem;
+        color: #0c4a6e;
+    }
+    
+    .highlight {
+        background-color: #fef3c7;
+        padding: 2px 4px;
+        border-radius: 3px;
+    }
+    
+    td small {
+        color: #6b7280;
+    }
+</style>
+
+<div class="admin-controls">
+    <div class="search-container">
+        <form method="GET" action="{{ url_for('admin_hotels') }}" class="search-form">
+            <input type="text" 
+                   name="search" 
+                   class="search-input" 
+                   placeholder="Search by hotel name, location, amenities..." 
+                   value="{{ search_query }}">
+            <button type="submit" class="btn-search">🔍 Search</button>
+            {% if search_query %}
+                <a href="{{ url_for('admin_hotels') }}" class="btn-clear">Clear</a>
+            {% endif %}
+        </form>
+    </div>
+    
+    <a href="{{ url_for('admin_add_hotel') }}" class="btn-add">
+        <span>➕</span> Add New Hotel
+    </a>
+</div>
+
+{% if search_query %}
+<div class="search-results-info">
+    Found {{ hotels|length }} hotel(s) matching "<strong>{{ search_query }}</strong>"
+</div>
+{% endif %}
+
+<div class="table-container">
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Hotel Name</th>
+                <th>Location</th>
+                <th>Rating</th>
+                <th>Amenities</th>
+                <th>Contact</th>
+                <th>Price/Night</th>
+                <th>Available</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for hotel in hotels %}
+            <tr>
+                <td>{{ hotel[0] }}</td>
+                <td><strong>{{ hotel[1] }}</strong></td>
+                <td>{{ hotel[2] }}</td>
+                <td>
+                    {% for i in range(hotel[3] or 0) %}⭐{% endfor %}
+                    <br><small>{{ hotel[3] }} stars</small>
+                </td>
+                <td style="max-width: 200px;">
+                    <small>{{ hotel[4][:50] }}{% if hotel[4] and hotel[4]|length > 50 %}...{% endif %}</small>
+                </td>
+                <td><small>{{ hotel[5] }}</small></td>
+                <td>${{ "%.2f"|format(hotel[6]|decimal_to_float) }}</td>
+                <td>{{ hotel[7] }} rooms</td>
+                <td>
+                    <div class="action-buttons">
+                        <a href="{{ url_for('admin_edit_hotel', hotel_id=hotel[0]) }}" class="btn-edit">Edit</a>
+                        <a href="{{ url_for('admin_delete_hotel', hotel_id=hotel[0]) }}" 
+                           class="btn-delete" 
+                           onclick="return confirm('Are you sure you want to delete {{ hotel[1] }}?')">Delete</a>
+                    </div>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="9" style="text-align: center; padding: 2rem;">
+                    {% if search_query %}
+                        No hotels found matching your search. <a href="{{ url_for('admin_hotels') }}">View all hotels</a>
+                    {% else %}
+                        No hotels found. <a href="{{ url_for('admin_add_hotel') }}">Add your first hotel</a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if search_query %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Highlight search terms in the table
+    var searchTerm = "{{ search_query | tojson | safe }}".toLowerCase();
+    var table = document.querySelector('.admin-table');
+    var cells = table.getElementsByTagName('td');
+
+    for (var i = 0; i < cells.length; i++) {
+        var cellText = cells[i].textContent || cells[i].innerText;
+        if (cellText.toLowerCase().includes(searchTerm)) {
+            if (!cells[i].querySelector('.action-buttons')) {
+                var safeTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                var regex = new RegExp('(' + safeTerm + ')', 'gi');
+                cells[i].innerHTML = cells[i].innerHTML.replace(regex, '<span class="highlight">$1</span>');
+            }
+        }
+    }
+
+    // Auto-focus if input exists
+    var searchInput = document.querySelector('.search-input');
+    if (searchInput && !searchInput.value) {
+        searchInput.focus();
+    }
+});
+</script>
+{% else %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Only auto-focus
+    var searchInput = document.querySelector('.search-input');
+    if (searchInput && !searchInput.value) {
+        searchInput.focus();
+    }
+});
+</script>
+{% endif %}
+
+{% endblock %}

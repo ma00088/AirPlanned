@@ -1,0 +1,496 @@
+{% extends "base.html" %}
+
+{% block title %}Cars - AirPlanned{% endblock %}
+
+{% block content %}
+<!-- Hidden user session data -->
+<div id="userSession" style="display: none;" data-logged-in="{% if session.user_id %}true{% else %}false{% endif %}"></div>
+
+<div class="page-header">
+    <h1>Rent Your Perfect Car</h1>
+    <p>Find the right vehicle for your journey</p>
+</div>
+
+<div class="search-container">
+    <form method="POST" class="search-form">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="pickup_location">Pickup Location</label>
+                <input type="text" name="pickup_location" id="pickup_location" class="form-control" 
+                       placeholder="Enter pickup location" list="rental-locations"
+                       value="{{ request.form.get('pickup_location', '') }}">
+                <datalist id="rental-locations">
+                    <option value="Bahrain International Airport">
+                    <option value="Manama City Center">
+                    <option value="Hamad International Airport">
+                    <option value="Dubai International Airport">
+                    <option value="Kuwait International Airport">
+                    <option value="King Khalid International Airport">
+                </datalist>
+            </div>
+            
+            <div class="form-group">
+                <label for="pickup_date">Pickup Date</label>
+                <input type="date" name="pickup_date" id="pickup_date" class="form-control"
+                       value="{{ request.form.get('pickup_date', '') }}">
+            </div>
+            
+            <div class="form-group">
+                <label for="pickup_time">Pickup Time</label>
+                <input type="time" name="pickup_time" id="pickup_time" class="form-control" 
+                       value="{{ request.form.get('pickup_time', '10:00') }}">
+            </div>
+            
+            <div class="form-group">
+                <label for="return_date">Return Date</label>
+                <input type="date" name="return_date" id="return_date" class="form-control"
+                       value="{{ request.form.get('return_date', '') }}">
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label for="return_time">Return Time</label>
+                <input type="time" name="return_time" id="return_time" class="form-control" 
+                       value="{{ request.form.get('return_time', '10:00') }}">
+            </div>
+            
+            <div class="form-group">
+                <label for="car_type">Car Type</label>
+                <select name="car_type" id="car_type" class="form-control">
+                    <option value="">Any Type</option>
+                    <option value="economy" {% if request.form.get('car_type') == 'economy' %}selected{% endif %}>Economy</option>
+                    <option value="compact" {% if request.form.get('car_type') == 'compact' %}selected{% endif %}>Compact</option>
+                    <option value="midsize" {% if request.form.get('car_type') == 'midsize' %}selected{% endif %}>Midsize</option>
+                    <option value="suv" {% if request.form.get('car_type') == 'suv' %}selected{% endif %}>SUV</option>
+                    <option value="luxury" {% if request.form.get('car_type') == 'luxury' %}selected{% endif %}>Luxury</option>
+                    <option value="van" {% if request.form.get('car_type') == 'van' %}selected{% endif %}>Van/Minivan</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="transmission">Transmission</label>
+                <select name="transmission" id="transmission" class="form-control">
+                    <option value="">Any</option>
+                    <option value="automatic" {% if request.form.get('transmission') == 'automatic' %}selected{% endif %}>Automatic</option>
+                    <option value="manual" {% if request.form.get('transmission') == 'manual' %}selected{% endif %}>Manual</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="fuel_type">Fuel Type</label>
+                <select name="fuel_type" id="fuel_type" class="form-control">
+                    <option value="">Any</option>
+                    <option value="gasoline" {% if request.form.get('fuel_type') == 'gasoline' %}selected{% endif %}>Gasoline</option>
+                    <option value="electric" {% if request.form.get('fuel_type') == 'electric' %}selected{% endif %}>Electric</option>
+                    <option value="hybrid" {% if request.form.get('fuel_type') == 'hybrid' %}selected{% endif %}>Hybrid</option>
+                    <option value="diesel" {% if request.form.get('fuel_type') == 'diesel' %}selected{% endif %}>Diesel</option>
+                </select>
+            </div>
+        </div>
+        
+        <button type="submit" class="btn btn-primary btn-large">Search Cars</button>
+    </form>
+</div>
+
+<div class="cars-section">
+    <h2>Available Rental Cars</h2>
+    {% if car_rentals %}
+        <div class="search-results-info">
+            <p>Found {{ car_rentals|length }} car rental(s) matching your criteria</p>
+        </div>
+     <div class="cars-grid">
+    {% for rental in car_rentals %}
+    <div class="car-card" data-car-id="{{ rental.id }}">
+        <div class="car-image">
+            {% if rental.company_name == 'Hertz' %}
+                <img src="https://ymimg1.b8cdn.com/uploads/article/47230/pictures/14644812/Rent-Luxury-Cars-in-Dubai-1-scaled.jpg" alt="{{ rental.company_name }}">
+            {% elif rental.company_name == 'Avis' %}
+                <img src="https://ymimg1.b8cdn.com/uploads/article/47230/pictures/14644812/Rent-Luxury-Cars-in-Dubai-1-scaled.jpg" alt="{{ rental.company_name }}">
+            {% elif rental.company_name == 'Budget' %}
+                <img src="https://ymimg1.b8cdn.com/uploads/article/47230/pictures/14644812/Rent-Luxury-Cars-in-Dubai-1-scaled.jpg" alt="{{ rental.company_name }}">
+            {% elif rental.company_name == 'Enterprise' %}
+                <img src="https://ymimg1.b8cdn.com/uploads/article/47230/pictures/14644812/Rent-Luxury-Cars-in-Dubai-1-scaled.jpg" alt="{{ rental.company_name }}">
+            {% elif rental.company_name == 'Sixt' %}
+                <img src="https://ymimg1.b8cdn.com/uploads/article/47230/pictures/14644812/Rent-Luxury-Cars-in-Dubai-1-scaled.jpg" alt="{{ rental.company_name }}">
+            {% else %}
+                <img src="https://ymimg1.b8cdn.com/uploads/article/47230/pictures/14644812/Rent-Luxury-Cars-in-Dubai-1-scaled.jpg" alt="{{ rental.company_name }}">
+            {% endif %}
+            <div class="car-badge">Available</div>
+        </div>
+                <div class="car-info">
+                    <h3>{{ rental.company_name }}</h3>
+                    <div class="car-model">{{ rental.car_types.split(',')[0] if rental.car_types else 'Various Models' }}</div>
+                    <div class="car-company">{{ rental.company_name }}</div>
+                    <div class="car-location">📍 {{ rental.location }}</div>
+                    
+                    <div class="car-features">
+                        <span class="feature">❄ AC</span>
+                        <span class="feature">📻 Radio</span>
+                        <span class="feature">⚙ Auto</span>
+                        <span class="feature">⛽ Gas</span>
+                        <span class="feature">👥 5 Seats</span>
+                    </div>
+                    
+                    <div class="car-specs">
+                        <div class="spec">
+                            <span class="spec-label">Available:</span>
+                            <span class="spec-value">{{ rental.availability }} cars</span>
+                        </div>
+                        <div class="spec">
+                            <span class="spec-label">Contact:</span>
+                            <span class="spec-value">{{ rental.contact_info }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="car-price">
+                        <span class="price-amount">${{ "%.2f"|format(rental.base_price) }}</span>
+                        <span class="price-period">per day</span>
+                    </div>
+                    
+                    <div class="car-type-prices">
+                        <small>Car types from ${{ "%.2f"|format(rental.car_prices.Economy) }} - ${{ "%.2f"|format(rental.car_prices.Luxury) }}</small>
+                    </div>
+                    
+                    <button class="btn btn-primary" onclick="bookCar('{{ rental.id }}')">Book Now</button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="no-results">
+            <div class="no-results-icon">🚗</div>
+            <h3>No car rentals found</h3>
+            {% if request.method == 'POST' %}
+                <p>No car rentals match your search criteria. Try adjusting your filters.</p>
+                <div class="no-results-suggestions">
+                    <h4>Try these suggestions:</h4>
+                    <ul>
+                        <li>Expand your location search</li>
+                        <li>Try different dates</li>
+                        <li>Remove car type filters</li>
+                        <li>Consider different pickup locations</li>
+                    </ul>
+                </div>
+            {% else %}
+                <p>Use the search form above to find car rentals for your trip.</p>
+            {% endif %}
+            <div class="no-results-actions">
+                <a href="{{ url_for('cars') }}" class="btn btn-primary">🔍 Clear Search</a>
+                <a href="{{ url_for('hotels') }}" class="btn btn-secondary">🏨 Book Hotels</a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<div class="rental-info">
+    <h2>Car Rental Information</h2>
+    <div class="info-grid">
+        <div class="info-card">
+            <h3>📋 Requirements</h3>
+            <ul>
+                <li>Valid driver's license</li>
+                <li>Credit card for deposit</li>
+                <li>Minimum age: 21 years</li>
+                <li>Additional fees may apply for drivers under 25</li>
+            </ul>
+        </div>
+        
+        <div class="info-card">
+            <h3>🛡 Insurance Options</h3>
+            <ul>
+                <li>Collision Damage Waiver (CDW)</li>
+                <li>Liability Insurance Supplement (LIS)</li>
+                <li>Personal Accident Insurance (PAI)</li>
+                <li>Personal Effects Coverage (PEC)</li>
+            </ul>
+        </div>
+        
+        <div class="info-card">
+            <h3>⛽ Fuel Policy</h3>
+            <ul>
+                <li>Full-to-Full: Return with same fuel level</li>
+                <li>Pre-purchase option available</li>
+                <li>Electric vehicles: Return with 80% charge</li>
+                <li>Fuel charges apply if not returned full</li>
+            </ul>
+        </div>
+        
+        <div class="info-card">
+            <h3>📍 Pickup & Return</h3>
+            <ul>
+                <li>Airport locations available 24/7</li>
+                <li>City locations: 6 AM - 10 PM</li>
+                <li>Free cancellation up to 48 hours</li>
+                <li>One-way rentals available</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script>
+    function bookCar(carId) {
+    // Check if user is logged in
+    if (!isUserLoggedIn) {
+        alert('Please log in to book a car rental');
+        window.location.href = '/login';
+        return;
+    }
+    
+    // Redirect to car booking page
+    window.location.href = '/book_car/' + carId;
+}
+// Get user login status from DOM
+var isUserLoggedIn = false;
+document.addEventListener('DOMContentLoaded', function() {
+    var userSession = document.getElementById('userSession');
+    if (userSession) {
+        isUserLoggedIn = userSession.dataset.loggedIn === 'true';
+    }
+});
+
+
+// Set up date and time handling
+document.addEventListener('DOMContentLoaded', function() {
+    var today = new Date().toISOString().split('T')[0];
+    var pickupDate = document.getElementById('pickup_date');
+    var returnDate = document.getElementById('return_date');
+    
+    // Set minimum dates
+    if (pickupDate) pickupDate.min = today;
+    if (returnDate) returnDate.min = today;
+    
+    // Set default dates if none provided
+    if (pickupDate && !pickupDate.value) {
+        pickupDate.value = today;
+    }
+    if (returnDate && !returnDate.value) {
+        var tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        returnDate.value = tomorrow.toISOString().split('T')[0];
+    }
+    
+    // Update return date minimum when pickup date changes
+    if (pickupDate && returnDate) {
+        pickupDate.addEventListener('change', function() {
+            var pickupValue = new Date(this.value);
+            pickupValue.setDate(pickupValue.getDate() + 1);
+            returnDate.min = pickupValue.toISOString().split('T')[0];
+            
+            if (new Date(returnDate.value) <= new Date(this.value)) {
+                returnDate.value = pickupValue.toISOString().split('T')[0];
+            }
+            
+            updateRentalDuration();
+        });
+        
+        returnDate.addEventListener('change', updateRentalDuration);
+    }
+    
+    updateRentalDuration();
+});
+
+function updateRentalDuration() {
+    var pickupDate = document.getElementById('pickup_date');
+    var returnDate = document.getElementById('return_date');
+    
+    if (!pickupDate || !returnDate || !pickupDate.value || !returnDate.value) {
+        return;
+    }
+    
+    var pickupDateValue = new Date(pickupDate.value);
+    var returnDateValue = new Date(returnDate.value);
+    
+    if (returnDateValue > pickupDateValue) {
+        var days = Math.ceil((returnDateValue - pickupDateValue) / (1000 * 60 * 60 * 24));
+        
+        // Update all price displays to show total for rental period
+        document.querySelectorAll('.car-card').forEach(function(card) {
+            var priceElement = card.querySelector('.price-amount');
+            if (!priceElement) return;
+            
+            var dailyRate = parseFloat(priceElement.textContent.replace(/[$,]/g, ''));
+            var totalCost = dailyRate * days;
+            
+            var durationInfo = card.querySelector('.rental-duration');
+            if (!durationInfo) {
+                durationInfo = document.createElement('div');
+                durationInfo.className = 'rental-duration';
+                var priceContainer = card.querySelector('.car-price');
+                if (priceContainer) {
+                    priceContainer.appendChild(durationInfo);
+                }
+            }
+            
+            if (durationInfo) {
+                durationInfo.innerHTML = 
+                    '<div class="duration-text">' + days + ' day' + (days > 1 ? 's' : '') + '</div>' +
+                    '<div class="total-cost">Total: $' + totalCost.toFixed(2) + '</div>';
+            }
+        });
+    }
+}
+
+// Car type filter
+document.addEventListener('DOMContentLoaded', function() {
+    var carTypeSelect = document.getElementById('car_type');
+    if (carTypeSelect) {
+        carTypeSelect.addEventListener('change', function() {
+            var selectedType = this.value.toLowerCase();
+            var carCards = document.querySelectorAll('.car-card');
+            
+            carCards.forEach(function(card) {
+                var carTitle = card.querySelector('h3');
+                if (!carTitle) return;
+                
+                var titleText = carTitle.textContent.toLowerCase();
+                if (!selectedType || titleText.includes(selectedType)) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+    }
+});
+
+// Search form enhancement
+document.addEventListener('DOMContentLoaded', function() {
+    var searchForm = document.querySelector('.search-form');
+    if (searchForm) {
+        searchForm.addEventListener('submit', function(e) {
+            var pickupLocation = document.getElementById('pickup_location');
+            var pickupDate = document.getElementById('pickup_date');
+            var returnDate = document.getElementById('return_date');
+            
+            if (pickupDate && returnDate && pickupDate.value && returnDate.value) {
+                if (new Date(returnDate.value) <= new Date(pickupDate.value)) {
+                    e.preventDefault();
+                    alert('Return date must be after pickup date');
+                    return;
+                }
+            }
+            
+            // Show loading state
+            var submitButton = this.querySelector('button[type="submit"]');
+            if (submitButton) {
+                submitButton.innerHTML = '🔍 Searching...';
+                submitButton.disabled = true;
+            }
+        });
+    }
+});
+</script>
+
+<style>
+.search-results-info {
+    text-align: center;
+    margin-bottom: 2rem;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.car-type-prices {
+    margin-bottom: 1rem;
+    color: #6b7280;
+    font-size: 0.9rem;
+}
+
+.rental-duration {
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.duration-text {
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.total-cost {
+    color: #059669;
+    font-weight: bold;
+    font-size: 1rem;
+}
+
+.no-results {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.no-results-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.no-results h3 {
+    color: #374151;
+    margin-bottom: 1rem;
+    font-size: 1.8rem;
+}
+
+.no-results p {
+    color: #6b7280;
+    margin-bottom: 2rem;
+    font-size: 1.1rem;
+}
+
+.no-results-suggestions {
+    background: #f8fafc;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin: 2rem 0;
+    text-align: left;
+}
+
+.no-results-suggestions h4 {
+    color: #374151;
+    margin-bottom: 1rem;
+}
+
+.no-results-suggestions ul {
+    list-style: none;
+    padding: 0;
+}
+
+.no-results-suggestions li {
+    padding: 0.5rem 0;
+    position: relative;
+    padding-left: 1.5rem;
+    color: #6b7280;
+}
+
+.no-results-suggestions li:before {
+    content: "💡";
+    position: absolute;
+    left: 0;
+}
+
+.no-results-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+    .no-results-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .search-results-info {
+        font-size: 0.9rem;
+    }
+    
+    .rental-duration {
+        font-size: 0.8rem;
+    }
+}
+</style>
+{% endblock %}

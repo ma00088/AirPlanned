@@ -1,0 +1,155 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Search Results - Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="admin-content">
+    <div class="content-header">
+        <h1>Search Results</h1>
+        <p>Results for: "{{ search_query }}"</p>
+    </div>
+    
+    <div class="search-results">
+        {% if results %}
+            <div class="results-count">
+                Found {{ results|length }} result(s)
+            </div>
+            
+            <div class="results-grid">
+                {% for item in results %}
+                    <div class="result-item">
+                        <div class="result-header">
+                            <h3>{{ item.name if item.name else item.flight_number if item.flight_number else 'Item #' + item.id|string }}</h3>
+                            <span class="result-type">{{ item.type }}</span>
+                        </div>
+                        
+                        <div class="result-details">
+                            {% if item.type == 'flight' %}
+                                <p><strong>Route:</strong> {{ item.origin_country }} → {{ item.destination_country }}</p>
+                                <p><strong>Date:</strong> {{ item.departure_date }}</p>
+                                <p><strong>Price:</strong> ${{ "%.2f"|format(item.price) }}</p>
+                                <p><strong>Available Seats:</strong> {{ item.available_seats }}</p>
+                            {% elif item.type == 'hotel' %}
+                                <p><strong>Location:</strong> {{ item.location }}</p>
+                                <p><strong>Rating:</strong> {{ item.star_rating }} stars</p>
+                                <p><strong>Price:</strong> ${{ "%.2f"|format(item.price_per_night) }}/night</p>
+                                <p><strong>Availability:</strong> {{ item.availability }} rooms</p>
+                            {% elif item.type == 'car' %}
+                                <p><strong>Company:</strong> {{ item.company_name }}</p>
+                                <p><strong>Location:</strong> {{ item.location }}</p>
+                                <p><strong>Price:</strong> ${{ "%.2f"|format(item.price_per_day) }}/day</p>
+                                <p><strong>Availability:</strong> {{ item.availability }} cars</p>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="result-actions">
+                            {% if item.type == 'flight' %}
+                                <a href="{{ url_for('admin_edit_flight', flight_id=item.id) }}" class="btn btn-sm btn-primary">Edit</a>
+                                <a href="{{ url_for('admin_delete_flight', flight_id=item.id) }}" class="btn btn-sm btn-danger" 
+                                   onclick="return confirm('Delete this flight?')">Delete</a>
+                            {% elif item.type == 'hotel' %}
+                                <a href="{{ url_for('admin_edit_hotel', hotel_id=item.id) }}" class="btn btn-sm btn-primary">Edit</a>
+                                <a href="{{ url_for('admin_delete_hotel', hotel_id=item.id) }}" class="btn btn-sm btn-danger" 
+                                   onclick="return confirm('Delete this hotel?')">Delete</a>
+                            {% elif item.type == 'car' %}
+                                <a href="{{ url_for('admin_edit_car', rental_id=item.id) }}" class="btn btn-sm btn-primary">Edit</a>
+                                <a href="{{ url_for('admin_delete_car', rental_id=item.id) }}" class="btn btn-sm btn-danger" 
+                                   onclick="return confirm('Delete this car rental?')">Delete</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="no-results">
+                <div class="no-results-icon">🔍</div>
+                <h3>No results found</h3>
+                <p>No items match your search query "{{ search_query }}"</p>
+                <a href="{{ url_for('admin_dashboard') }}" class="btn btn-primary">Back to Dashboard</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.search-results {
+    padding: 2rem 0;
+}
+
+.results-count {
+    margin-bottom: 2rem;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.results-grid {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.result-item {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    margin-bottom: 1rem;
+}
+
+.result-header h3 {
+    color: #111827;
+    margin: 0;
+}
+
+.result-type {
+    background: #3b82f6;
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.result-details {
+    margin-bottom: 1rem;
+}
+
+.result-details p {
+    margin: 0.5rem 0;
+    color: #6b7280;
+}
+
+.result-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.no-results {
+    text-align: center;
+    padding: 4rem 2rem;
+}
+
+.no-results-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.no-results h3 {
+    color: #374151;
+    margin-bottom: 1rem;
+}
+
+.no-results p {
+    color: #6b7280;
+    margin-bottom: 2rem;
+}
+</style>
+{% endblock %}

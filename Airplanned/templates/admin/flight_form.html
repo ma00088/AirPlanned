@@ -1,0 +1,209 @@
+{% extends "admin/base.html" %}
+
+{% block title %}{% if flight %}Edit{% else %}Add{% endif %} Flight - Admin Panel{% endblock %}
+{% block header %}{% if flight %}Edit Flight{{ flight[1] }}{% else %}Add New Flight{% endif %}{% endblock %}
+
+{% block content %}
+<style>
+    .form-container {
+        max-width: 800px;
+    }
+    
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .form-group label {
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: #374151;
+    }
+    
+    .form-control {
+        padding: 0.75rem;
+        border: 2px solid #e2e8f0;
+        border-radius: 6px;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+    }
+    
+    .form-control:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+    }
+    
+    .btn-save {
+        background: #10b981;
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 6px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+    }
+    
+    .btn-save:hover {
+        background: #059669;
+    }
+    
+    .btn-cancel {
+        background: #6b7280;
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 6px;
+        text-decoration: none;
+        display: inline-block;
+    }
+    
+    .btn-cancel:hover {
+        background: #4b5563;
+    }
+</style>
+
+<div class="form-container">
+    <form method="POST" action="">
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="flight_number">Flight Number *</label>
+                <input type="text" name="flight_number" id="flight_number" class="form-control" 
+                       value="{% if flight %}{{ flight[1] }}{% endif %}" required 
+                       placeholder="e.g., GF001">
+            </div>
+            
+            <div class="form-group">
+                <label for="airline">Airline *</label>
+                <input type="text" name="airline" id="airline" class="form-control" 
+                       value="{% if flight %}{{ flight[13] }}{% endif %}" required 
+                       placeholder="e.g., Gulf Air">
+            </div>
+        </div>
+        
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="origin_country">Origin City *</label>
+                <input type="text" name="origin_country" id="origin_country" class="form-control" 
+                       value="{% if flight %}{{ flight[2] }}{% endif %}" required 
+                       placeholder="e.g., Manama">
+            </div>
+            
+            <div class="form-group">
+                <label for="origin_airport">Origin Airport Code *</label>
+                <input type="text" name="origin_airport" id="origin_airport" class="form-control" 
+                       value="{% if flight %}{{ flight[4] }}{% endif %}" required 
+                       placeholder="e.g., BAH" maxlength="3">
+            </div>
+        </div>
+        
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="destination_country">Destination City *</label>
+                <input type="text" name="destination_country" id="destination_country" class="form-control" 
+                       value="{% if flight %}{{ flight[3] }}{% endif %}" required 
+                       placeholder="e.g., Dubai">
+            </div>
+            
+            <div class="form-group">
+                <label for="destination_airport">Destination Airport Code *</label>
+                <input type="text" name="destination_airport" id="destination_airport" class="form-control" 
+                       value="{% if flight %}{{ flight[5] }}{% endif %}" required 
+                       placeholder="e.g., DXB" maxlength="3">
+            </div>
+        </div>
+        
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="departure_date">Departure Date *</label>
+                <input type="date" name="departure_date" id="departure_date" class="form-control" 
+                       value="{% if flight %}{{ flight[6] }}{% endif %}" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="departure_time">Departure Time *</label>
+                <input type="time" name="departure_time" id="departure_time" class="form-control" 
+                       value="{% if flight %}{{ flight[7]|format_time }}{% endif %}" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="arrival_time">Arrival Time *</label>
+                <input type="time" name="arrival_time" id="arrival_time" class="form-control" 
+                       value="{% if flight %}{{ flight[8]|format_time }}{% endif %}" required>
+            </div>
+        </div>
+        
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="aircraft_type">Aircraft Type *</label>
+                <select name="aircraft_type" id="aircraft_type" class="form-control" required>
+                    <option value="">Select Aircraft</option>
+                    <option value="Airbus A320" {% if flight and flight[9] == 'Airbus A320' %}selected{% endif %}>Airbus A320</option>
+                    <option value="Airbus A321" {% if flight and flight[9] == 'Airbus A321' %}selected{% endif %}>Airbus A321</option>
+                    <option value="Airbus A350" {% if flight and flight[9] == 'Airbus A350' %}selected{% endif %}>Airbus A350</option>
+                    <option value="Boeing 737" {% if flight and flight[9] == 'Boeing 737' %}selected{% endif %}>Boeing 737</option>
+                    <option value="Boeing 787" {% if flight and flight[9] == 'Boeing 787' %}selected{% endif %}>Boeing 787</option>
+                    <option value="Boeing 777" {% if flight and flight[9] == 'Boeing 777' %}selected{% endif %}>Boeing 777</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="total_seats">Total Seats *</label>
+                <input type="number" name="total_seats" id="total_seats" class="form-control" 
+                       value="{% if flight %}{{ flight[10] }}{% endif %}" required 
+                       min="1" max="500">
+            </div>
+            
+            <div class="form-group">
+                <label for="available_seats">Available Seats *</label>
+                <input type="number" name="available_seats" id="available_seats" class="form-control" 
+                       value="{% if flight %}{{ flight[11] }}{% endif %}" required 
+                       min="0" max="500">
+            </div>
+        </div>
+        
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="price">Price (USD) *</label>
+                <input type="number" name="price" id="price" class="form-control" 
+                       value="{% if flight %}{{ flight[12] }}{% endif %}" required 
+                       min="0" step="0.01" placeholder="99.99">
+            </div>
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn-save">{% if flight %}Update{% else %}Add{% endif %} Flight</button>
+            <a href="{{ url_for('admin_flights') }}" class="btn-cancel">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<script>
+    // Set minimum departure date to today
+    document.addEventListener('DOMContentLoaded', function() {
+        var today = new Date().toISOString().split('T')[0];
+        document.getElementById('departure_date').min = today;
+        
+        // Validate available seats
+        document.getElementById('total_seats').addEventListener('change', function() {
+            document.getElementById('available_seats').max = this.value;
+            if (document.getElementById('available_seats').value > this.value) {
+                document.getElementById('available_seats').value = this.value;
+            }
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,203 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Car Rentals - Admin Panel{% endblock %}
+{% block header %}Manage Car Rentals{% endblock %}
+
+{% block content %}
+<style>
+    .admin-controls {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+    
+    .search-container {
+        flex: 1;
+        max-width: 500px;
+    }
+    
+    .search-form {
+        display: flex;
+        gap: 0.5rem;
+    }
+    
+    .search-input {
+        flex: 1;
+        padding: 0.75rem;
+        border: 2px solid #e2e8f0;
+        border-radius: 6px;
+        font-size: 1rem;
+    }
+    
+    .search-input:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    .btn-search {
+        background: #667eea;
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+    
+    .btn-search:hover {
+        background: #5a67d8;
+    }
+    
+    .btn-clear {
+        background: #6b7280;
+        color: white;
+        padding: 0.75rem 1rem;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+    }
+    
+    .btn-clear:hover {
+        background: #4b5563;
+    }
+    
+    .search-results-info {
+        background: #f0f9ff;
+        padding: 1rem;
+        border-radius: 6px;
+        margin-bottom: 1rem;
+        color: #0c4a6e;
+    }
+    
+    .highlight {
+        background-color: #fef3c7;
+        padding: 2px 4px;
+        border-radius: 3px;
+    }
+    
+    td small {
+        color: #6b7280;
+    }
+</style>
+
+<div class="admin-controls">
+    <div class="search-container">
+        <form method="GET" action="{{ url_for('admin_cars') }}" class="search-form">
+            <input type="text" 
+                   name="search" 
+                   class="search-input" 
+                   placeholder="Search by company, location, car types..." 
+                   value="{{ search_query }}">
+            <button type="submit" class="btn-search">🔍 Search</button>
+            {% if search_query %}
+                <a href="{{ url_for('admin_cars') }}" class="btn-clear">Clear</a>
+            {% endif %}
+        </form>
+    </div>
+    
+    <a href="{{ url_for('admin_add_car') }}" class="btn-add">
+        <span>➕</span> Add New Car Rental
+    </a>
+</div>
+
+{% if search_query %}
+<div class="search-results-info">
+    Found {{ cars|length }} car rental(s) matching "<strong>{{ search_query }}</strong>"
+</div>
+{% endif %}
+
+<div class="table-container">
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Company Name</th>
+                <th>Location</th>
+                <th>Car Types</th>
+                <th>Available</th>
+                <th>Contact</th>
+                <th>Price/Day</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for car in cars %}
+            <tr>
+                <td>{{ car[0] }}</td>
+                <td><strong>{{ car[1] }}</strong></td>
+                <td>{{ car[2] }}</td>
+                <td style="max-width: 250px;">
+                    <small>{{ car[3][:80] }}{% if car[3]|length > 80 %}...{% endif %}</small>
+                </td>
+                <td>{{ car[4] }} cars</td>
+                <td><small>{{ car[5] }}</small></td>
+                <td>${{ "%.2f"|format(car[6]|decimal_to_float) }}</td>
+                <td>
+                    <div class="action-buttons">
+                        <a href="{{ url_for('admin_edit_car', rental_id=car[0]) }}" class="btn-edit">Edit</a>
+                        <a href="{{ url_for('admin_delete_car', rental_id=car[0]) }}" 
+                           class="btn-delete" 
+                           onclick="return confirm('Are you sure you want to delete {{ car[1] }}?')">Delete</a>
+                    </div>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="8" style="text-align: center; padding: 2rem;">
+                    {% if search_query %}
+                        No car rentals found matching your search. <a href="{{ url_for('admin_cars') }}">View all car rentals</a>
+                    {% else %}
+                        No car rentals found. <a href="{{ url_for('admin_add_car') }}">Add your first car rental</a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% if search_query %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Highlight search terms in the table
+    var searchTerm = "{{ search_query | tojson | safe }}".toLowerCase();
+    var table = document.querySelector('.admin-table');
+    var cells = table.getElementsByTagName('td');
+    
+    for (var i = 0; i < cells.length; i++) {
+        var cellText = cells[i].textContent || cells[i].innerText;
+        if (cellText.toLowerCase().includes(searchTerm)) {
+            // Don't highlight action buttons column
+            if (!cells[i].querySelector('.action-buttons')) {
+                var safeTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                var regex = new RegExp('(' + safeTerm + ')', 'gi');
+                cells[i].innerHTML = cells[i].innerHTML.replace(regex, '<span class="highlight">$1</span>');
+            }
+        }
+    }
+
+    // Focus on search input
+    var searchInput = document.querySelector('.search-input');
+    if (searchInput && !searchInput.value) {
+        searchInput.focus();
+    }
+});
+</script>
+{% else %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Focus on search input even if no search_query
+    var searchInput = document.querySelector('.search-input');
+    if (searchInput && !searchInput.value) {
+        searchInput.focus();
+    }
+});
+</script>
+{% endif %}
+
+{% endblock %}

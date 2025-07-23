@@ -1,0 +1,261 @@
+<!-- FIXED index.html with Round Trip Support -->
+{% extends "base.html" %}
+
+{% block title %}AirPlanned - Book Your Perfect Flight{% endblock %}
+
+{% block content %}
+<div class="hero-section">
+    <div class="hero-content">
+        <h1>Find Your Perfect Flight</h1>
+        <p>Search and book flights to destinations worldwide with ease and confidence</p>
+    </div>
+</div>
+
+<div class="search-container">
+    <form method="POST" action="{{ url_for('search_flights') }}" class="search-form">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="origin">From</label>
+                <select name="origin" id="origin" class="form-control" required>
+                    <option value="">Select Origin</option>
+                    {% for origin in origins %}
+                        <option value="{{ origin[0] }}">{{ origin[0] }} ({{ origin[1] }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="destination">To</label>
+                <select name="destination" id="destination" class="form-control" required>
+                    <option value="">Select Destination</option>
+                    {% for destination in destinations %}
+                        <option value="{{ destination[0] }}">{{ destination[0] }} ({{ destination[1] }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="departure_date">Departure Date</label>
+                <input type="date" name="departure_date" id="departure_date" class="form-control" required>
+            </div>
+            
+            <div class="form-group" id="return_date_group" style="display: none;">
+                <label for="return_date">Return Date</label>
+                <input type="date" name="return_date" id="return_date" class="form-control">
+            </div>
+            
+            <div class="form-group">
+                <label for="passengers">Passengers</label>
+                <select name="passengers" id="passengers" class="form-control">
+                    <option value="1">1 Passenger</option>
+                    <option value="2">2 Passengers</option>
+                    <option value="3">3 Passengers</option>
+                    <option value="4">4 Passengers</option>
+                    <option value="5">5+ Passengers</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label for="trip_type">Trip Type</label>
+                <select name="trip_type" id="trip_type" class="form-control">
+                    <option value="one-way">One Way</option>
+                    <option value="round-trip">Round Trip</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="class">Class</label>
+                <select name="class" id="class" class="form-control">
+                    <option value="economy">Economy</option>
+                    <option value="business">Business</option>
+                    <option value="first">First Class</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="min_price">Min Price ($)</label>
+                <input type="number" name="min_price" id="min_price" class="form-control" min="0" step="0.01" placeholder="0">
+            </div>
+            
+            <div class="form-group">
+                <label for="max_price">Max Price ($)</label>
+                <input type="number" name="max_price" id="max_price" class="form-control" min="0" step="0.01" placeholder="Any">
+            </div>
+        </div>
+        
+        <button type="submit" class="btn btn-primary btn-large">Search Flights</button>
+    </form>
+</div>
+
+<div class="flights-section">
+    <h2>Available Flights</h2>
+    {% if flights %}
+        <div class="flights-grid">
+            {% for flight in flights %}
+                <div class="flight-card">
+                    <div class="flight-header">
+                        <div class="flight-number">{{ flight[1] }}</div>
+                        <div class="airline">{{ flight[13] }}</div>
+                    </div>
+                    
+                    <div class="flight-route">
+                        <div class="departure">
+                            <div class="time">{{ flight[7]|format_time }}</div>
+                            <div class="location">{{ flight[2] }} ({{ flight[4] }})</div>
+                        </div>
+                        <div class="flight-duration">
+                            <div class="plane-icon">✈</div>
+                            <div class="aircraft">{{ flight[9] }}</div>
+                        </div>
+                        <div class="arrival">
+                            <div class="time">{{ flight[8]|format_time }}</div>
+                            <div class="location">{{ flight[3] }} ({{ flight[5] }})</div>
+                        </div>
+                    </div>
+                    
+                    <div class="flight-details">
+                        <div class="date">{{ flight[6]|format_date }}</div>
+                        <div class="seats">{{ flight[11] }} seats available</div>
+                    </div>
+                    
+                    <div class="flight-footer">
+                        <div class="price">${{ "%.2f"|format(flight[12]) }}</div>
+                        <button class="btn btn-primary" onclick="bookFlight('{{ flight[0] }}')">Book Now</button>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="no-results">
+            <h3>No flights available</h3>
+            <p>Please check back later for more flights or try adjusting your search criteria</p>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+// Set minimum date for departure date input
+document.addEventListener('DOMContentLoaded', function() {
+    var today = new Date().toISOString().split('T')[0];
+    var departureDateInput = document.getElementById('departure_date');
+    var returnDateInput = document.getElementById('return_date');
+    var tripTypeSelect = document.getElementById('trip_type');
+    var returnDateGroup = document.getElementById('return_date_group');
+    
+    if (departureDateInput) {
+        departureDateInput.min = today;
+        departureDateInput.value = today;
+    }
+    
+    if (returnDateInput) {
+        returnDateInput.min = today;
+        var tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        returnDateInput.value = tomorrow.toISOString().split('T')[0];
+    }
+    
+    // Handle trip type changes
+    if (tripTypeSelect && returnDateGroup) {
+        tripTypeSelect.addEventListener('change', function() {
+            if (this.value === 'round-trip') {
+                returnDateGroup.style.display = 'flex';
+                returnDateInput.required = true;
+            } else {
+                returnDateGroup.style.display = 'none';
+                returnDateInput.required = false;
+            }
+        });
+    }
+    
+    // Update return date minimum when departure date changes
+    if (departureDateInput && returnDateInput) {
+        departureDateInput.addEventListener('change', function() {
+            var departureValue = new Date(this.value);
+            departureValue.setDate(departureValue.getDate() + 1);
+            returnDateInput.min = departureValue.toISOString().split('T')[0];
+            
+            if (new Date(returnDateInput.value) <= new Date(this.value)) {
+                returnDateInput.value = departureValue.toISOString().split('T')[0];
+            }
+        });
+    }
+    
+    // Add loading state to search form
+    var searchForm = document.querySelector('.search-form');
+    if (searchForm) {
+        searchForm.addEventListener('submit', function(e) {
+            // Validate required fields
+            var origin = document.getElementById('origin').value;
+            var destination = document.getElementById('destination').value;
+            var departureDate = document.getElementById('departure_date').value;
+            var tripType = document.getElementById('trip_type').value;
+            var returnDate = document.getElementById('return_date').value;
+            
+            if (!origin || !destination || !departureDate) {
+                e.preventDefault();
+                alert('Please fill in all required fields (Origin, Destination, and Departure Date)');
+                return;
+            }
+            
+            // Check if origin and destination are the same
+            if (origin === destination) {
+                e.preventDefault();
+                alert('Origin and destination cannot be the same');
+                return;
+            }
+            
+            // Validate return date for round trip
+            if (tripType === 'round-trip' && !returnDate) {
+                e.preventDefault();
+                alert('Please select a return date for round trip');
+                return;
+            }
+            
+            if (tripType === 'round-trip' && new Date(returnDate) <= new Date(departureDate)) {
+                e.preventDefault();
+                alert('Return date must be after departure date');
+                return;
+            }
+            
+            var submitButton = this.querySelector('button[type="submit"]');
+            if (submitButton) {
+                submitButton.innerHTML = 'Searching Flights...';
+                submitButton.disabled = true;
+            }
+        });
+    }
+    
+    // Add hover effects for flight cards
+    document.querySelectorAll('.flight-card').forEach(function(card) {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-2px)';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+        });
+    });
+});
+
+// Function to handle flight booking with passenger and class parameters
+function bookFlight(flightId) {
+    // Get the selected passenger count and class from the search form
+    var passengers = document.getElementById('passengers').value || '1';
+    var flightClass = document.getElementById('class').value || 'economy';
+    var tripType = document.getElementById('trip_type').value || 'one-way';
+    var returnDate = document.getElementById('return_date').value || '';
+    
+    // Build the URL with parameters
+    var url = '/book/' + flightId + '?passengers=' + passengers + '&class=' + flightClass + '&trip_type=' + tripType;
+    
+    if (tripType === 'round-trip' && returnDate) {
+        url += '&return_date=' + returnDate;
+    }
+    
+    // Redirect to booking page
+    window.location.href = url;
+}
+</script>
+{% endblock %}

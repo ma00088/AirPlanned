@@ -1,0 +1,428 @@
+{% extends "base.html" %}
+
+{% block title %}Hotels - AirPlanned{% endblock %}
+
+{% block content %}
+<!-- Hidden user session data -->
+<div id="userSession" style="display: none;" data-logged-in="{% if session.user_id %}true{% else %}false{% endif %}"></div>
+
+<div class="page-header">
+    <h1>Find Your Perfect Hotel</h1>
+    <p>Discover comfortable accommodations for your stay</p>
+</div>
+
+<div class="search-container">
+    <form method="POST" class="search-form">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="location">Location</label>
+                <input type="text" name="location" id="location" class="form-control" 
+                       placeholder="Enter city or location" list="popular-destinations"
+                       value="{{ request.form.get('location', '') }}">
+                <datalist id="popular-destinations">
+                    <option value="Manama, Bahrain">
+                    <option value="Doha, Qatar">
+                    <option value="Dubai, UAE">
+                    <option value="Kuwait City, Kuwait">
+                    <option value="Riyadh, Saudi Arabia">
+                    <option value="Abu Dhabi, UAE">
+                    <option value="Muscat, Oman">
+                    <option value="Cairo, Egypt">
+                </datalist>
+            </div>
+            
+            <div class="form-group">
+                <label for="check_in">Check-in Date</label>
+                <input type="date" name="check_in" id="check_in" class="form-control"
+                       value="{{ request.form.get('check_in', '') }}">
+            </div>
+            
+            <div class="form-group">
+                <label for="check_out">Check-out Date</label>
+                <input type="date" name="check_out" id="check_out" class="form-control"
+                       value="{{ request.form.get('check_out', '') }}">
+            </div>
+            
+            <div class="form-group">
+                <label for="guests">Guests</label>
+                <select name="guests" id="guests" class="form-control">
+                    <option value="1" {% if request.form.get('guests', '1') == '1' %}selected{% endif %}>1 Guest</option>
+                    <option value="2" {% if request.form.get('guests') == '2' %}selected{% endif %}>2 Guests</option>
+                    <option value="3" {% if request.form.get('guests') == '3' %}selected{% endif %}>3 Guests</option>
+                    <option value="4" {% if request.form.get('guests') == '4' %}selected{% endif %}>4 Guests</option>
+                    <option value="5" {% if request.form.get('guests') == '5' %}selected{% endif %}>5+ Guests</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label for="room_type">Room Type</label>
+                <select name="room_type" id="room_type" class="form-control">
+                    <option value="">Any Room Type</option>
+                    <option value="standard" {% if request.form.get('room_type') == 'standard' %}selected{% endif %}>Standard Room</option>
+                    <option value="deluxe" {% if request.form.get('room_type') == 'deluxe' %}selected{% endif %}>Deluxe Room</option>
+                    <option value="suite" {% if request.form.get('room_type') == 'suite' %}selected{% endif %}>Suite</option>
+                    <option value="penthouse" {% if request.form.get('room_type') == 'penthouse' %}selected{% endif %}>Penthouse</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="star_rating">Star Rating</label>
+                <select name="star_rating" id="star_rating" class="form-control">
+                    <option value="">Any Rating</option>
+                    <option value="5" {% if request.form.get('star_rating') == '5' %}selected{% endif %}>5 Stars</option>
+                    <option value="4" {% if request.form.get('star_rating') == '4' %}selected{% endif %}>4 Stars & Up</option>
+                    <option value="3" {% if request.form.get('star_rating') == '3' %}selected{% endif %}>3 Stars & Up</option>
+                    <option value="2" {% if request.form.get('star_rating') == '2' %}selected{% endif %}>2 Stars & Up</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="min_price_hotel">Min Price (per night)</label>
+                <input type="number" name="min_price_hotel" id="min_price_hotel" class="form-control" 
+                       min="0" step="0.01" placeholder="$0" 
+                       value="{{ request.form.get('min_price_hotel', '') }}">
+            </div>
+            
+            <div class="form-group">
+                <label for="max_price_hotel">Max Price (per night)</label>
+                <input type="number" name="max_price_hotel" id="max_price_hotel" class="form-control" 
+                       min="0" step="0.01" placeholder="Any"
+                       value="{{ request.form.get('max_price_hotel', '') }}">
+            </div>
+        </div>
+        
+        <button type="submit" class="btn btn-primary btn-large">Search Hotels</button>
+    </form>
+</div>
+
+<div class="hotels-section">
+    <h2>Available Hotels</h2>
+    {% if hotels %}
+        <div class="search-results-info">
+            <p>Found {{ hotels|length }} hotel(s) matching your criteria</p>
+        </div>
+        <div class="hotels-grid">
+            {% for hotel in hotels %}
+            <div class="hotel-card" data-hotel-id="{{ hotel.id }}">
+                <div class="hotel-image">
+    {% if 'Four Seasons' in hotel.name %}
+        <img src="https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400&h=250&fit=crop" alt="{{ hotel.name }}">
+    {% elif 'Ritz-Carlton' in hotel.name %}
+        <img src="https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=400&h=250&fit=crop" alt="{{ hotel.name }}">
+    {% elif 'Gulf Hotel' in hotel.name %}
+        <img src="https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=400&h=250&fit=crop" alt="{{ hotel.name }}">
+    {% elif 'St. Regis' in hotel.name %}
+        <img src="https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=400&h=250&fit=crop" alt="{{ hotel.name }}">
+    {% elif 'Conrad' in hotel.name %}
+        <img src="https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=400&h=250&fit=crop" alt="{{ hotel.name }}">
+    {% elif 'Atlantis' in hotel.name %}
+        <img src="https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?w=400&h=250&fit=crop" alt="{{ hotel.name }}">
+    {% elif 'Regency' in hotel.name %}
+        <img src="https://images.unsplash.com/photo-1564501049412-61c2a3083791?w=400&h=250&fit=crop" alt="{{ hotel.name }}">
+    {% else %}
+        <img src="https://images.unsplash.com/photo-1455587734955-081b22074882?w=400&h=250&fit=crop" alt="{{ hotel.name }}">
+    {% endif %}
+    <div class="hotel-badge">
+        {% if hotel.star_rating == 5 %}Luxury
+        {% elif hotel.star_rating == 4 %}Premium
+        {% elif hotel.star_rating == 3 %}Comfort
+        {% else %}Value{% endif %}
+    </div>
+</div>
+                <div class="hotel-info">
+                    <h3>{{ hotel.name }}</h3>
+                    <div class="hotel-location">📍 {{ hotel.location }}</div>
+                    <div class="hotel-rating">
+                        <div class="stars">
+                            {% for i in range(hotel.star_rating) %}⭐{% endfor %}
+                        </div>
+                        <span class="rating-text">{{ hotel.star_rating }}.0 stars</span>
+                    </div>
+                    <div class="hotel-amenities">
+                        {% if hotel.amenities %}
+                            {% set amenities = hotel.amenities.split(', ') %}
+                            {% for amenity in amenities[:4] %}
+                                <span class="amenity">{{ amenity }}</span>
+                            {% endfor %}
+                        {% else %}
+                            <span class="amenity">WiFi</span>
+                            <span class="amenity">Restaurant</span>
+                            <span class="amenity">Pool</span>
+                        {% endif %}
+                    </div>
+                    <div class="hotel-description">
+                        Experience comfort and luxury at {{ hotel.name }} with modern amenities and excellent service.
+                    </div>
+                    <div class="hotel-price">
+                        <span class="price-amount">${{ "%.2f"|format(hotel.base_price) }}</span>
+                        <span class="price-period">per night</span>
+                    </div>
+                    <div class="room-prices">
+                        <small>Room types from ${{ "%.2f"|format(hotel.room_prices.standard) }} - ${{ "%.2f"|format(hotel.room_prices.penthouse) }}</small>
+                    </div>
+                    <button class="btn btn-primary" onclick="bookHotel('{{ hotel.id }}')">Book Now</button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="no-results">
+            <div class="no-results-icon">🏨</div>
+            <h3>No hotels found</h3>
+            {% if request.method == 'POST' %}
+                <p>No hotels match your search criteria. Try adjusting your filters.</p>
+                <div class="no-results-suggestions">
+                    <h4>Try these suggestions:</h4>
+                    <ul>
+                        <li>Expand your location search</li>
+                        <li>Try different dates</li>
+                        <li>Remove price filters</li>
+                        <li>Lower star rating requirements</li>
+                    </ul>
+                </div>
+            {% else %}
+                <p>Use the search form above to find hotels for your stay.</p>
+            {% endif %}
+            <div class="no-results-actions">
+                <a href="{{ url_for('hotels') }}" class="btn btn-primary">🔍 Clear Search</a>
+                <a href="{{ url_for('index') }}" class="btn btn-secondary">✈️ Book Flights</a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<div class="rental-info">
+    <h2>Hotel Booking Information</h2>
+    <div class="info-grid">
+        <div class="info-card">
+            <h3>📋 Check-in Requirements</h3>
+            <ul>
+                <li>Valid government-issued ID</li>
+                <li>Credit card for incidentals</li>
+                <li>Minimum age: 18 years</li>
+                <li>Check-in time: 3:00 PM</li>
+            </ul>
+        </div>
+        
+        <div class="info-card">
+            <h3>🛡 Amenities & Services</h3>
+            <ul>
+                <li>Free WiFi in all rooms</li>
+                <li>24/7 front desk service</li>
+                <li>Room service available</li>
+                <li>Concierge assistance</li>
+            </ul>
+        </div>
+        
+        <div class="info-card">
+            <h3>📅 Booking Policy</h3>
+            <ul>
+                <li>Free cancellation up to 24 hours</li>
+                <li>Flexible check-out times</li>
+                <li>Group booking discounts available</li>
+                <li>Early check-in subject to availability</li>
+            </ul>
+        </div>
+        
+        <div class="info-card">
+            <h3>📍 Location Benefits</h3>
+            <ul>
+                <li>Prime city center locations</li>
+                <li>Close to major attractions</li>
+                <li>Easy airport transfers</li>
+                <li>Shopping and dining nearby</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script>
+// Get user login status from DOM
+var isUserLoggedIn = false;
+document.addEventListener('DOMContentLoaded', function() {
+    var userSession = document.getElementById('userSession');
+    if (userSession) {
+        isUserLoggedIn = userSession.dataset.loggedIn === 'true';
+    }
+});
+
+function bookHotel(hotelId) {
+    // Check if user is logged in
+    if (!isUserLoggedIn) {
+        alert('Please log in to book a hotel room');
+        window.location.href = '/login';
+        return;
+    }
+    
+    // Redirect to hotel booking page
+    window.location.href = '/book_hotel/' + hotelId;
+}
+
+// Set minimum dates for check-in and check-out
+document.addEventListener('DOMContentLoaded', function() {
+    var today = new Date().toISOString().split('T')[0];
+    var checkInDate = document.getElementById('check_in');
+    var checkOutDate = document.getElementById('check_out');
+    
+    if (checkInDate) checkInDate.min = today;
+    if (checkOutDate) checkOutDate.min = today;
+    
+    // Set default dates if none provided
+    if (checkInDate && !checkInDate.value) {
+        checkInDate.value = today;
+    }
+    if (checkOutDate && !checkOutDate.value) {
+        var tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        checkOutDate.value = tomorrow.toISOString().split('T')[0];
+    }
+    
+    // Update check-out minimum when check-in changes
+    if (checkInDate && checkOutDate) {
+        checkInDate.addEventListener('change', function() {
+            var checkInValue = new Date(this.value);
+            checkInValue.setDate(checkInValue.getDate() + 1);
+            checkOutDate.min = checkInValue.toISOString().split('T')[0];
+            
+            if (new Date(checkOutDate.value) <= new Date(this.value)) {
+                checkOutDate.value = checkInValue.toISOString().split('T')[0];
+            }
+        });
+    }
+});
+
+// Hotel card hover effects
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.hotel-card').forEach(function(card) {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-5px)';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+        });
+    });
+});
+
+// Search form enhancements
+document.addEventListener('DOMContentLoaded', function() {
+    var searchForm = document.querySelector('.search-form');
+    if (searchForm) {
+        searchForm.addEventListener('submit', function(e) {
+            var location = document.getElementById('location');
+            var checkIn = document.getElementById('check_in');
+            var checkOut = document.getElementById('check_out');
+            
+            if (checkIn && checkOut && checkIn.value && checkOut.value) {
+                if (new Date(checkOut.value) <= new Date(checkIn.value)) {
+                    e.preventDefault();
+                    alert('Check-out date must be after check-in date');
+                    return;
+                }
+            }
+            
+            // Show loading state
+            var submitButton = this.querySelector('button[type="submit"]');
+            if (submitButton) {
+                submitButton.innerHTML = '🔍 Searching...';
+                submitButton.disabled = true;
+            }
+        });
+    }
+});
+</script>
+
+<style>
+.search-results-info {
+    text-align: center;
+    margin-bottom: 2rem;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.room-prices {
+    margin-bottom: 1rem;
+    color: #6b7280;
+    font-size: 0.9rem;
+}
+
+.no-results {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.no-results-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.no-results h3 {
+    color: #374151;
+    margin-bottom: 1rem;
+    font-size: 1.8rem;
+}
+
+.no-results p {
+    color: #6b7280;
+    margin-bottom: 2rem;
+    font-size: 1.1rem;
+}
+
+.no-results-suggestions {
+    background: #f8fafc;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin: 2rem 0;
+    text-align: left;
+}
+
+.no-results-suggestions h4 {
+    color: #374151;
+    margin-bottom: 1rem;
+}
+
+.no-results-suggestions ul {
+    list-style: none;
+    padding: 0;
+}
+
+.no-results-suggestions li {
+    padding: 0.5rem 0;
+    position: relative;
+    padding-left: 1.5rem;
+    color: #6b7280;
+}
+
+.no-results-suggestions li:before {
+    content: "💡";
+    position: absolute;
+    left: 0;
+}
+
+.no-results-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+    .no-results-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .search-results-info {
+        font-size: 0.9rem;
+    }
+}
+</style>
+{% endblock %}

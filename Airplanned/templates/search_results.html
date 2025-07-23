@@ -1,0 +1,608 @@
+{% extends "base.html" %}
+
+{% block title %}Flight Search Results - AirPlanned{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Flight Search Results</h1>
+    {% if trip_type == 'round-trip' %}
+        <p>Found {{ outbound_flights|length }} outbound flights and {{ return_flights|length }} return flights</p>
+    {% else %}
+        <p>Found {{ outbound_flights|length }} flights matching your criteria</p>
+    {% endif %}
+</div>
+
+<div class="search-results">
+    {% if outbound_flights %}
+        <!-- Outbound Flights Section -->
+        <div class="flight-section">
+            <h2>
+                {% if trip_type == 'round-trip' %}
+                    Outbound Flights - {{ search_params.get('origin', '') }} to {{ search_params.get('destination', '') }}
+                {% else %}
+                    Available Flights
+                {% endif %}
+            </h2>
+            <div class="flights-grid" id="outboundFlights">
+                {% for flight in outbound_flights %}
+                    <div class="flight-card outbound-flight" data-flight-id="{{ flight[0] }}">
+                        <div class="flight-header">
+                            <div class="flight-number">{{ flight[1] }}</div>
+                            <div class="airline">{{ flight[13] }}</div>
+                            {% if trip_type == 'round-trip' %}
+                                <div class="flight-direction">Outbound</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="flight-route">
+                            <div class="departure">
+                                <div class="time">{{ flight[7]|format_time }}</div>
+                                <div class="location">{{ flight[2] }} ({{ flight[4] }})</div>
+                            </div>
+                            <div class="flight-duration">
+                                <div class="plane-icon">✈</div>
+                                <div class="aircraft">{{ flight[9] }}</div>
+                            </div>
+                            <div class="arrival">
+                                <div class="time">{{ flight[8]|format_time }}</div>
+                                <div class="location">{{ flight[3] }} ({{ flight[5] }})</div>
+                            </div>
+                        </div>
+                        
+                        <div class="flight-details">
+                            <div class="date">{{ flight[6]|format_date }}</div>
+                            <div class="seats">{{ flight[11] }} seats available</div>
+                        </div>
+                        
+                        <div class="flight-footer">
+                            <div class="price">${{ "%.2f"|format(flight[12]) }}</div>
+                            {% if trip_type == 'round-trip' %}
+                                <button class="btn btn-primary" onclick="selectOutboundFlight('{{ flight[0] }}', this)">Select Outbound</button>
+                            {% else %}
+                                <button class="btn btn-primary" onclick="bookFlight('{{ flight[0] }}')">Book Now</button>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        {% if trip_type == 'round-trip' and return_flights %}
+            <!-- Return Flights Section -->
+            <div class="flight-section" id="returnSection" style="display: none;">
+                <h2>Return Flights - {{ search_params.get('destination', '') }} to {{ search_params.get('origin', '') }}</h2>
+                <div class="flights-grid" id="returnFlights">
+                    {% for flight in return_flights %}
+                        <div class="flight-card return-flight" data-flight-id="{{ flight[0] }}">
+                            <div class="flight-header">
+                                <div class="flight-number">{{ flight[1] }}</div>
+                                <div class="airline">{{ flight[13] }}</div>
+                                <div class="flight-direction">Return</div>
+                            </div>
+                            
+                            <div class="flight-route">
+                                <div class="departure">
+                                    <div class="time">{{ flight[7]|format_time }}</div>
+                                    <div class="location">{{ flight[2] }} ({{ flight[4] }})</div>
+                                </div>
+                                <div class="flight-duration">
+                                    <div class="plane-icon">✈</div>
+                                    <div class="aircraft">{{ flight[9] }}</div>
+                                </div>
+                                <div class="arrival">
+                                    <div class="time">{{ flight[8]|format_time }}</div>
+                                    <div class="location">{{ flight[3] }} ({{ flight[5] }})</div>
+                                </div>
+                            </div>
+                            
+                            <div class="flight-details">
+                                <div class="date">{{ flight[6]|format_date }}</div>
+                                <div class="seats">{{ flight[11] }} seats available</div>
+                            </div>
+                            
+                            <div class="flight-footer">
+                                <div class="price">${{ "%.2f"|format(flight[12]) }}</div>
+                                <button class="btn btn-primary" onclick="selectReturnFlight('{{ flight[0] }}', this)">Select Return</button>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Round Trip Summary and Book Button -->
+            <div class="round-trip-summary" id="roundTripSummary" style="display: none;">
+                <h3>Round Trip Summary</h3>
+                <div class="summary-content">
+                    <div class="selected-flights">
+                        <div class="selected-outbound">
+                            <h4>Outbound Flight</h4>
+                            <div id="outboundSummary"></div>
+                        </div>
+                        <div class="selected-return">
+                            <h4>Return Flight</h4>
+                            <div id="returnSummary"></div>
+                        </div>
+                    </div>
+                    <div class="total-price">
+                        <h4>Total Price: <span id="totalPrice">$0.00</span></h4>
+                        <button class="btn btn-success btn-large" id="bookRoundTripBtn" onclick="bookRoundTrip()">Book Round Trip</button>
+                    </div>
+                </div>
+            </div>
+        {% elif trip_type == 'round-trip' and not return_flights %}
+            <div class="no-return-flights">
+                <h3>No Return Flights Available</h3>
+                <p>Sorry, we couldn't find any return flights for your selected date. Please try a different return date.</p>
+                <a href="{{ url_for('index') }}" class="btn btn-primary">Modify Search</a>
+            </div>
+        {% endif %}
+        
+        <div class="search-actions">
+            <a href="{{ url_for('index') }}" class="btn btn-secondary">🔍 New Search</a>
+            <button onclick="window.print()" class="btn btn-secondary">🖨️ Print Results</button>
+        </div>
+    {% else %}
+        <div class="no-results">
+            <div class="no-results-icon">✈️</div>
+            <h3>No flights found</h3>
+            <p>We couldn't find any flights matching your search criteria.</p>
+            <div class="no-results-suggestions">
+                <h4>Try these suggestions:</h4>
+                <ul>
+                    <li>Check your departure and arrival cities</li>
+                    <li>Try different dates</li>
+                    <li>Remove price filters</li>
+                    <li>Consider nearby airports</li>
+                </ul>
+            </div>
+            <div class="no-results-actions">
+                <a href="{{ url_for('index') }}" class="btn btn-primary">🔍 Search Again</a>
+                <a href="{{ url_for('hotels') }}" class="btn btn-secondary">🏨 Browse Hotels</a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Hidden form to store search parameters -->
+<div id="searchParams" style="display: none;">
+    <input type="hidden" id="stored_passengers" value="{{ search_params.get('passengers', '1') }}">
+    <input type="hidden" id="stored_class" value="{{ search_params.get('class', 'economy') }}">
+    <input type="hidden" id="stored_trip_type" value="{{ trip_type }}">
+    <input type="hidden" id="stored_return_date" value="{{ search_params.get('return_date', '') }}">
+</div>
+
+<script>
+// Global variables for round trip selection
+var selectedOutboundFlight = null;
+var selectedReturnFlight = null;
+var tripType = "{{ trip_type }}";
+
+// Add loading state for booking buttons
+document.querySelectorAll('.btn[onclick*="bookFlight"]').forEach(function(button) {
+    button.addEventListener('click', function() {
+        this.innerHTML = '⏳ Loading...';
+        this.disabled = true;
+    });
+});
+
+// Add hover effects for flight cards
+document.querySelectorAll('.flight-card').forEach(function(card) {
+    card.addEventListener('mouseenter', function() {
+        this.style.transform = 'translateY(-2px)';
+        this.style.boxShadow = '0 8px 25px rgba(0, 0, 0, 0.15)';
+    });
+    
+    card.addEventListener('mouseleave', function() {
+        this.style.transform = 'translateY(0)';
+        this.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.08)';
+    });
+});
+
+// Function to handle outbound flight selection for round trip
+function selectOutboundFlight(flightId, buttonElement) {
+    // Reset previous selections
+    document.querySelectorAll('.outbound-flight').forEach(function(card) {
+        card.classList.remove('selected');
+        card.querySelector('button').textContent = 'Select Outbound';
+        card.querySelector('button').classList.remove('btn-success');
+        card.querySelector('button').classList.add('btn-primary');
+    });
+    
+    // Mark this flight as selected
+    var flightCard = buttonElement.closest('.flight-card');
+    flightCard.classList.add('selected');
+    buttonElement.textContent = 'Selected ✓';
+    buttonElement.classList.remove('btn-primary');
+    buttonElement.classList.add('btn-success');
+    
+    // Store selected flight data
+    selectedOutboundFlight = {
+        id: flightId,
+        number: flightCard.querySelector('.flight-number').textContent,
+        route: flightCard.querySelector('.departure .location').textContent + ' → ' + flightCard.querySelector('.arrival .location').textContent,
+        date: flightCard.querySelector('.date').textContent,
+        time: flightCard.querySelector('.departure .time').textContent,
+        price: parseFloat(flightCard.querySelector('.price').textContent.replace(/[$,]/g, ''))
+    };
+    
+    // Show return flights section
+    document.getElementById('returnSection').style.display = 'block';
+    
+    // Scroll to return section
+    document.getElementById('returnSection').scrollIntoView({behavior: 'smooth'});
+    
+    updateRoundTripSummary();
+}
+
+// Function to handle return flight selection for round trip
+function selectReturnFlight(flightId, buttonElement) {
+    // Reset previous selections
+    document.querySelectorAll('.return-flight').forEach(function(card) {
+        card.classList.remove('selected');
+        card.querySelector('button').textContent = 'Select Return';
+        card.querySelector('button').classList.remove('btn-success');
+        card.querySelector('button').classList.add('btn-primary');
+    });
+    
+    // Mark this flight as selected
+    var flightCard = buttonElement.closest('.flight-card');
+    flightCard.classList.add('selected');
+    buttonElement.textContent = 'Selected ✓';
+    buttonElement.classList.remove('btn-primary');
+    buttonElement.classList.add('btn-success');
+    
+    // Store selected flight data
+    selectedReturnFlight = {
+        id: flightId,
+        number: flightCard.querySelector('.flight-number').textContent,
+        route: flightCard.querySelector('.departure .location').textContent + ' → ' + flightCard.querySelector('.arrival .location').textContent,
+        date: flightCard.querySelector('.date').textContent,
+        time: flightCard.querySelector('.departure .time').textContent,
+        price: parseFloat(flightCard.querySelector('.price').textContent.replace(/[$,]/g, ''))
+    };
+    
+    updateRoundTripSummary();
+    
+    // Show round trip summary
+    document.getElementById('roundTripSummary').style.display = 'block';
+    
+    // Scroll to summary
+    document.getElementById('roundTripSummary').scrollIntoView({behavior: 'smooth'});
+}
+
+// Function to update round trip summary
+function updateRoundTripSummary() {
+    if (selectedOutboundFlight) {
+        document.getElementById('outboundSummary').innerHTML = `
+            <div class="flight-summary-item">
+                <strong>${selectedOutboundFlight.number}</strong> - ${selectedOutboundFlight.route}<br>
+                ${selectedOutboundFlight.date} at ${selectedOutboundFlight.time} - $${selectedOutboundFlight.price.toFixed(2)}
+            </div>
+        `;
+    }
+    
+    if (selectedReturnFlight) {
+        document.getElementById('returnSummary').innerHTML = `
+            <div class="flight-summary-item">
+                <strong>${selectedReturnFlight.number}</strong> - ${selectedReturnFlight.route}<br>
+                ${selectedReturnFlight.date} at ${selectedReturnFlight.time} - $${selectedReturnFlight.price.toFixed(2)}
+            </div>
+        `;
+    }
+    
+    if (selectedOutboundFlight && selectedReturnFlight) {
+        var totalPrice = selectedOutboundFlight.price + selectedReturnFlight.price;
+        var passengers = parseInt(document.getElementById('stored_passengers').value) || 1;
+        var finalTotal = totalPrice * passengers;
+        
+        document.getElementById('totalPrice').textContent = `$${finalTotal.toFixed(2)}`;
+        document.getElementById('bookRoundTripBtn').disabled = false;
+    }
+}
+
+// Function to book round trip
+function bookRoundTrip() {
+    if (!selectedOutboundFlight || !selectedReturnFlight) {
+        alert('Please select both outbound and return flights');
+        return;
+    }
+    
+    var passengers = document.getElementById('stored_passengers').value || '1';
+    var flightClass = document.getElementById('stored_class').value || 'economy';
+    var returnDate = document.getElementById('stored_return_date').value || '';
+    
+    // Build the URL with both flight IDs
+    var url = '/book/' + selectedOutboundFlight.id + 
+              '?passengers=' + passengers + 
+              '&class=' + flightClass + 
+              '&trip_type=round-trip' +
+              '&return_flight_id=' + selectedReturnFlight.id +
+              '&return_date=' + returnDate;
+    
+    // Redirect to booking page
+    window.location.href = url;
+}
+
+// Function to handle one-way flight booking
+function bookFlight(flightId) {
+    var passengers = document.getElementById('stored_passengers').value || '1';
+    var flightClass = document.getElementById('stored_class').value || 'economy';
+    
+    var url = '/book/' + flightId + '?passengers=' + passengers + '&class=' + flightClass + '&trip_type=one-way';
+    
+    window.location.href = url;
+}
+
+// Sort flights functionality
+function sortFlights(criteria) {
+    const grids = document.querySelectorAll('.flights-grid');
+    
+    grids.forEach(grid => {
+        const cards = Array.from(grid.children);
+        
+        cards.sort((a, b) => {
+            switch(criteria) {
+                case 'price':
+                    const priceA = parseFloat(a.querySelector('.price').textContent.replace(/[$,]/g, ''));
+                    const priceB = parseFloat(b.querySelector('.price').textContent.replace(/[$,]/g, ''));
+                    return priceA - priceB;
+                case 'time':
+                    const timeA = a.querySelector('.departure .time').textContent;
+                    const timeB = b.querySelector('.departure .time').textContent;
+                    return timeA.localeCompare(timeB);
+                case 'airline':
+                    const airlineA = a.querySelector('.airline').textContent;
+                    const airlineB = b.querySelector('.airline').textContent;
+                    return airlineA.localeCompare(airlineB);
+                default:
+                    return 0;
+            }
+        });
+        
+        // Re-append sorted cards
+        cards.forEach(card => grid.appendChild(card));
+    });
+}
+
+// Add sort controls if there are flights
+if (document.querySelector('.flights-grid')) {
+    const sortControls = document.createElement('div');
+    sortControls.className = 'sort-controls';
+    sortControls.innerHTML = `
+        <div class="sort-options">
+            <label>Sort by:</label>
+            <button onclick="sortFlights('price')" class="btn btn-sm btn-secondary">💰 Price</button>
+            <button onclick="sortFlights('time')" class="btn btn-sm btn-secondary">🕐 Time</button>
+            <button onclick="sortFlights('airline')" class="btn btn-sm btn-secondary">✈️ Airline</button>
+        </div>
+    `;
+    
+    const searchResults = document.querySelector('.search-results');
+    searchResults.insertBefore(sortControls, searchResults.firstChild.nextSibling);
+}
+</script>
+
+<style>
+.flight-section {
+    margin-bottom: 3rem;
+}
+
+.flight-section h2 {
+    color: #1f2937;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.flight-direction {
+    background: #667eea;
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.flight-card.selected {
+    border: 2px solid #667eea;
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.2);
+    transform: translateY(-2px);
+}
+
+.round-trip-summary {
+    background: white;
+    padding: 2rem;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    margin: 2rem 0;
+    border: 2px solid #10b981;
+}
+
+.round-trip-summary h3 {
+    color: #059669;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.summary-content {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 2rem;
+    align-items: start;
+}
+
+.selected-flights {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.selected-outbound, .selected-return {
+    background: #f8fafc;
+    padding: 1.5rem;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+}
+
+.selected-outbound h4, .selected-return h4 {
+    color: #374151;
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+}
+
+.flight-summary-item {
+    line-height: 1.6;
+    color: #6b7280;
+}
+
+.total-price {
+    text-align: center;
+    padding: 1.5rem;
+    background: #f0fdf4;
+    border-radius: 12px;
+    border: 1px solid #10b981;
+}
+
+.total-price h4 {
+    color: #059669;
+    margin-bottom: 1rem;
+    font-size: 1.3rem;
+}
+
+.no-return-flights {
+    text-align: center;
+    padding: 3rem 2rem;
+    background: #fef3c7;
+    border-radius: 16px;
+    border: 1px solid #fbbf24;
+    margin: 2rem 0;
+}
+
+.no-return-flights h3 {
+    color: #92400e;
+    margin-bottom: 1rem;
+}
+
+.no-return-flights p {
+    color: #92400e;
+    margin-bottom: 1.5rem;
+}
+
+.search-actions {
+    text-align: center;
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid #e2e8f0;
+}
+
+.search-actions .btn {
+    margin: 0 0.5rem;
+}
+
+.no-results {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.no-results-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.no-results h3 {
+    color: #374151;
+    margin-bottom: 1rem;
+    font-size: 1.8rem;
+}
+
+.no-results p {
+    color: #6b7280;
+    margin-bottom: 2rem;
+    font-size: 1.1rem;
+}
+
+.no-results-suggestions {
+    background: #f8fafc;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin: 2rem 0;
+    text-align: left;
+}
+
+.no-results-suggestions h4 {
+    color: #374151;
+    margin-bottom: 1rem;
+}
+
+.no-results-suggestions ul {
+    list-style: none;
+    padding: 0;
+}
+
+.no-results-suggestions li {
+    padding: 0.5rem 0;
+    position: relative;
+    padding-left: 1.5rem;
+    color: #6b7280;
+}
+
+.no-results-suggestions li:before {
+    content: "💡";
+    position: absolute;
+    left: 0;
+}
+
+.no-results-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.sort-controls {
+    background: white;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+
+.sort-options {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.sort-options label {
+    font-weight: 600;
+    color: #374151;
+}
+
+@media (max-width: 768px) {
+    .summary-content {
+        grid-template-columns: 1fr;
+    }
+    
+    .no-results-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .sort-options {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .search-actions .btn {
+        margin: 0.25rem;
+    }
+}
+</style>
+{% endblock %}

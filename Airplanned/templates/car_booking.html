@@ -1,0 +1,707 @@
+{% extends "base.html" %}
+
+{% block title %}Book Car Rental {{ rental.company_name }} - AirPlanned{% endblock %}
+
+{% block content %}
+<div class="booking-container">
+    <div class="rental-summary">
+        <h2>Car Rental Details</h2>
+        <div class="rental-info">
+            <div class="info-group">
+                <label>Company:</label>
+                <span>{{ rental.company_name }}</span>
+            </div>
+            <div class="info-group">
+                <label>Location:</label>
+                <span>{{ rental.location }}</span>
+            </div>
+            <div class="info-group">
+                <label>Available Car Types:</label>
+                <span>{{ rental.car_types }}</span>
+            </div>
+            <div class="info-group">
+                <label>Available Cars:</label>
+                <span>{{ rental.availability }} vehicles</span>
+            </div>
+            <div class="info-group">
+                <label>Contact:</label>
+                <span>{{ rental.contact_info }}</span>
+            </div>
+            <div class="info-group">
+                <label>Base Price per Day:</label>
+                <span class="price">${{ "%.2f"|format(rental.base_price) }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden data for JavaScript -->
+    <div id="rentalData" style="display: none;" 
+         data-base-price="{{ rental.base_price }}"
+         data-rental-id="{{ rental.id }}">
+    </div>
+
+    <form method="POST" action="{{ url_for('confirm_car_booking') }}" class="booking-form" id="carBookingForm" novalidate>
+        <input type="hidden" name="rental_id" value="{{ rental.id }}">
+        
+        <h3>Rental Information</h3>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label for="pickup_date">Pickup Date *</label>
+                <input type="date" name="pickup_date" id="pickup_date" class="form-control" required>
+                <div class="error-message" id="pickup_date_error"></div>
+            </div>
+            
+            <div class="form-group">
+                <label for="return_date">Return Date *</label>
+                <input type="date" name="return_date" id="return_date" class="form-control" required>
+                <div class="error-message" id="return_date_error"></div>
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label for="pickup_time">Pickup Time *</label>
+                <input type="time" name="pickup_time" id="pickup_time" class="form-control" value="10:00" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="return_time">Return Time *</label>
+                <input type="time" name="return_time" id="return_time" class="form-control" value="10:00" required>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label for="car_type">Car Type *</label>
+            <select name="car_type" id="car_type" class="form-control" required>
+                <option value="">Select Car Type</option>
+                <option value="Economy">Economy - ${{ "%.2f"|format(rental.base_price) }}</option>
+                <option value="Compact">Compact - ${{ "%.2f"|format(rental.base_price * 1.2) }}</option>
+                <option value="Mid-size">Mid-size - ${{ "%.2f"|format(rental.base_price * 1.4) }}</option>
+                <option value="SUV">SUV - ${{ "%.2f"|format(rental.base_price * 1.8) }}</option>
+                <option value="Luxury">Luxury - ${{ "%.2f"|format(rental.base_price * 2.5) }}</option>
+                <option value="Van">Van/Minivan - ${{ "%.2f"|format(rental.base_price * 2.0) }}</option>
+            </select>
+            <div class="error-message" id="car_type_error"></div>
+        </div>
+        
+        <h3>Renter Information</h3>
+        <div class="form-group">
+            <label for="renter_name">Full Name *</label>
+            <input type="text" name="renter_name" id="renter_name" class="form-control" required 
+                   placeholder="Enter full name as on driver's license" maxlength="100">
+            <small>Name must match your driver's license</small>
+            <div class="error-message" id="renter_name_error"></div>
+        </div>
+        
+        <div class="form-group">
+            <label for="renter_email">Email Address *</label>
+            <input type="email" name="renter_email" id="renter_email" class="form-control" required 
+                   placeholder="example@email.com" maxlength="100">
+            <small>We'll send your rental confirmation and updates to this email</small>
+            <div class="error-message" id="renter_email_error"></div>
+        </div>
+        
+        <div class="form-group">
+            <label for="renter_phone">Phone Number *</label>
+            <input type="tel" name="renter_phone" id="renter_phone" class="form-control" required 
+                   placeholder="+973 XXXX XXXX" maxlength="20">
+            <small>For rental updates and emergency contact</small>
+            <div class="error-message" id="renter_phone_error"></div>
+        </div>
+        
+        <div class="rental-summary-box">
+            <h4>Rental Summary</h4>
+            <div id="rental-calculation">
+                <div class="calc-row">
+                    <span>Pickup Date:</span>
+                    <span id="pickup-display">Select date</span>
+                </div>
+                <div class="calc-row">
+                    <span>Return Date:</span>
+                    <span id="return-display">Select date</span>
+                </div>
+                <div class="calc-row">
+                    <span>Rental Days:</span>
+                    <span id="days-display">0</span>
+                </div>
+                <div class="calc-row">
+                    <span>Car Type:</span>
+                    <span id="car-display">Select car</span>
+                </div>
+                <div class="calc-row">
+                    <span>Daily Rate:</span>
+                    <span id="rate-display">$0.00</span>
+                </div>
+                <div class="calc-row total">
+                    <span>Total Amount:</span>
+                    <span id="total-display">$0.00</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="rental-requirements">
+            <h4>Important Requirements</h4>
+            <ul>
+                <li>Valid driver's license (minimum 1 year)</li>
+                <li>Credit card in renter's name for security deposit</li>
+                <li>Minimum age: 21 years (additional fees may apply under 25)</li>
+                <li>International driving permit required for non-GCC licenses</li>
+            </ul>
+        </div>
+        
+        <div class="terms-section">
+            <label class="checkbox-container">
+                <input type="checkbox" id="accept_terms" required>
+                <span class="checkmark"></span>
+                I accept the <a href="#" target="_blank">Terms of Service</a> and <a href="#" target="_blank">Rental Agreement</a>
+            </label>
+        </div>
+        
+        <div class="booking-actions">
+            <button type="submit" class="btn btn-primary btn-large" id="confirmBooking" disabled>
+                Complete dates and car selection
+            </button>
+            <a href="{{ url_for('cars') }}" class="btn btn-secondary">Cancel Booking</a>
+        </div>
+    </form>
+</div>
+
+<script>
+// Global variables for the booking system
+var CarBookingSystem = {
+    basePrice: 0,
+    carPrices: {},
+    formElements: {},
+    
+    // Initialize the car booking system
+    init: function() {
+        this.loadData();
+        this.initializeElements();
+        this.setupEventListeners();
+        this.setDefaultDates();
+        this.updateRentalSummary();
+    },
+    
+    // Load data from DOM
+    loadData: function() {
+        var rentalData = document.getElementById('rentalData');
+        if (rentalData) {
+            this.basePrice = parseFloat(rentalData.dataset.basePrice) || 0;
+            
+            // Calculate car prices
+            this.carPrices = {
+                'Economy': this.basePrice,
+                'Compact': this.basePrice * 1.2,
+                'Mid-size': this.basePrice * 1.4,
+                'SUV': this.basePrice * 1.8,
+                'Luxury': this.basePrice * 2.5,
+                'Van': this.basePrice * 2.0
+            };
+        }
+    },
+    
+    // Initialize form elements
+    initializeElements: function() {
+        this.formElements = {
+            pickupDate: document.getElementById('pickup_date'),
+            returnDate: document.getElementById('return_date'),
+            carType: document.getElementById('car_type'),
+            renterName: document.getElementById('renter_name'),
+            renterEmail: document.getElementById('renter_email'),
+            renterPhone: document.getElementById('renter_phone'),
+            acceptTerms: document.getElementById('accept_terms'),
+            confirmButton: document.getElementById('confirmBooking'),
+            form: document.getElementById('carBookingForm')
+        };
+    },
+    
+    // Setup event listeners
+    setupEventListeners: function() {
+        var self = this;
+        
+        // Date change listeners
+        if (this.formElements.pickupDate) {
+            this.formElements.pickupDate.addEventListener('change', function() {
+                self.handlePickupDateChange();
+                self.updateRentalSummary();
+                self.validateField(this);
+            });
+        }
+        
+        if (this.formElements.returnDate) {
+            this.formElements.returnDate.addEventListener('change', function() {
+                self.updateRentalSummary();
+                self.validateField(this);
+            });
+        }
+        
+        // Car type change listener
+        if (this.formElements.carType) {
+            this.formElements.carType.addEventListener('change', function() {
+                self.updateRentalSummary();
+                self.validateField(this);
+            });
+        }
+        
+        // Form field listeners
+        ['renterName', 'renterEmail', 'renterPhone'].forEach(function(fieldName) {
+            if (self.formElements[fieldName]) {
+                self.formElements[fieldName].addEventListener('input', function() {
+                    self.updateConfirmButton();
+                });
+                
+                self.formElements[fieldName].addEventListener('blur', function() {
+                    self.validateField(this);
+                });
+            }
+        });
+        
+        // Terms checkbox listener
+        if (this.formElements.acceptTerms) {
+            this.formElements.acceptTerms.addEventListener('change', function() {
+                self.updateConfirmButton();
+            });
+        }
+        
+        // Form submission listener
+        if (this.formElements.form) {
+            this.formElements.form.addEventListener('submit', function(e) {
+                self.handleFormSubmission(e);
+            });
+        }
+        
+        // Phone number formatting
+        if (this.formElements.renterPhone) {
+            this.formElements.renterPhone.addEventListener('input', function() {
+                self.formatPhoneNumber(this);
+            });
+        }
+    },
+    
+    // Set default dates
+    setDefaultDates: function() {
+        var today = new Date().toISOString().split('T')[0];
+        var tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        var tomorrowStr = tomorrow.toISOString().split('T')[0];
+        
+        if (this.formElements.pickupDate) {
+            this.formElements.pickupDate.min = today;
+            if (!this.formElements.pickupDate.value) {
+                this.formElements.pickupDate.value = today;
+            }
+        }
+        
+        if (this.formElements.returnDate) {
+            this.formElements.returnDate.min = today;
+            if (!this.formElements.returnDate.value) {
+                this.formElements.returnDate.value = tomorrowStr;
+            }
+        }
+    },
+    
+    // Handle pickup date change
+    handlePickupDateChange: function() {
+        if (this.formElements.pickupDate && this.formElements.returnDate) {
+            var pickupValue = new Date(this.formElements.pickupDate.value);
+            pickupValue.setDate(pickupValue.getDate() + 1);
+            var minReturnDate = pickupValue.toISOString().split('T')[0];
+            
+            this.formElements.returnDate.min = minReturnDate;
+            
+            if (new Date(this.formElements.returnDate.value) <= new Date(this.formElements.pickupDate.value)) {
+                this.formElements.returnDate.value = minReturnDate;
+            }
+        }
+    },
+    
+    // Update rental summary
+    updateRentalSummary: function() {
+        var pickupValue = this.formElements.pickupDate ? this.formElements.pickupDate.value : '';
+        var returnValue = this.formElements.returnDate ? this.formElements.returnDate.value : '';
+        var carTypeValue = this.formElements.carType ? this.formElements.carType.value : '';
+        
+        // Update date displays
+        this.updateDisplay('pickup-display', pickupValue ? new Date(pickupValue).toLocaleDateString() : 'Select date');
+        this.updateDisplay('return-display', returnValue ? new Date(returnValue).toLocaleDateString() : 'Select date');
+        
+        if (pickupValue && returnValue) {
+            var days = Math.ceil((new Date(returnValue) - new Date(pickupValue)) / (1000 * 60 * 60 * 24));
+            this.updateDisplay('days-display', days.toString());
+            
+            if (carTypeValue && this.carPrices[carTypeValue]) {
+                var dailyRate = this.carPrices[carTypeValue];
+                var totalPrice = dailyRate * days;
+                
+                this.updateDisplay('car-display', carTypeValue);
+                this.updateDisplay('rate-display', '$' + dailyRate.toFixed(2));
+                this.updateDisplay('total-display', '$' + totalPrice.toFixed(2));
+            } else {
+                this.updateDisplay('car-display', 'Select car');
+                this.updateDisplay('rate-display', '$0.00');
+                this.updateDisplay('total-display', '$0.00');
+            }
+        } else {
+            this.updateDisplay('days-display', '0');
+            this.updateDisplay('car-display', 'Select car');
+            this.updateDisplay('rate-display', '$0.00');
+            this.updateDisplay('total-display', '$0.00');
+        }
+        
+        this.updateConfirmButton();
+    },
+    
+    // Update display element
+    updateDisplay: function(elementId, value) {
+        var element = document.getElementById(elementId);
+        if (element) {
+            element.textContent = value;
+        }
+    },
+    
+    // Update confirm button
+    updateConfirmButton: function() {
+        if (!this.formElements.confirmButton) return;
+        
+        var pickupValue = this.formElements.pickupDate ? this.formElements.pickupDate.value : '';
+        var returnValue = this.formElements.returnDate ? this.formElements.returnDate.value : '';
+        var carTypeValue = this.formElements.carType ? this.formElements.carType.value : '';
+        var renterNameValue = this.formElements.renterName ? this.formElements.renterName.value.trim() : '';
+        var renterEmailValue = this.formElements.renterEmail ? this.formElements.renterEmail.value.trim() : '';
+        var renterPhoneValue = this.formElements.renterPhone ? this.formElements.renterPhone.value.trim() : '';
+        var termsAcceptedValue = this.formElements.acceptTerms ? this.formElements.acceptTerms.checked : false;
+        
+        var allFieldsValid = pickupValue && returnValue && carTypeValue && 
+                           renterNameValue && renterEmailValue && renterPhoneValue && 
+                           termsAcceptedValue && this.carPrices[carTypeValue];
+        
+        if (allFieldsValid) {
+            var days = Math.ceil((new Date(returnValue) - new Date(pickupValue)) / (1000 * 60 * 60 * 24));
+            var totalPrice = this.carPrices[carTypeValue] * days;
+            
+            this.formElements.confirmButton.disabled = false;
+            this.formElements.confirmButton.textContent = 'Confirm Rental - $' + totalPrice.toFixed(2);
+            this.formElements.confirmButton.classList.add('btn-ready');
+        } else {
+            this.formElements.confirmButton.disabled = true;
+            this.formElements.confirmButton.classList.remove('btn-ready');
+            
+            if (!pickupValue || !returnValue) {
+                this.formElements.confirmButton.textContent = 'Select pickup and return dates';
+            } else if (!carTypeValue) {
+                this.formElements.confirmButton.textContent = 'Select car type';
+            } else if (!renterNameValue || !renterEmailValue || !renterPhoneValue) {
+                this.formElements.confirmButton.textContent = 'Complete renter information';
+            } else if (!termsAcceptedValue) {
+                this.formElements.confirmButton.textContent = 'Accept terms to continue';
+            } else {
+                this.formElements.confirmButton.textContent = 'Complete all fields';
+            }
+        }
+    },
+    
+    // Validate individual field
+    validateField: function(field) {
+        if (!field) return true;
+        
+        var value = field.value.trim();
+        var isValid = true;
+        var errorMessage = '';
+        
+        // Clear previous error state
+        field.classList.remove('error');
+        this.clearError(field);
+        
+        switch (field.type) {
+            case 'date':
+                if (!value) {
+                    errorMessage = 'Date is required';
+                    isValid = false;
+                } else if (field.id === 'return_date' && this.formElements.pickupDate) {
+                    var pickupDate = new Date(this.formElements.pickupDate.value);
+                    var returnDate = new Date(value);
+                    if (returnDate <= pickupDate) {
+                        errorMessage = 'Return date must be after pickup date';
+                        isValid = false;
+                    }
+                }
+                break;
+                
+            case 'text':
+                if (!value) {
+                    errorMessage = 'Name is required';
+                    isValid = false;
+                } else if (value.length < 2) {
+                    errorMessage = 'Name must be at least 2 characters';
+                    isValid = false;
+                } else if (!/^[A-Za-z\s]+$/.test(value)) {
+                    errorMessage = 'Name can only contain letters and spaces';
+                    isValid = false;
+                }
+                break;
+                
+            case 'email':
+                if (!value) {
+                    errorMessage = 'Email is required';
+                    isValid = false;
+                } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+                    errorMessage = 'Please enter a valid email address';
+                    isValid = false;
+                }
+                break;
+                
+            case 'tel':
+                if (!value) {
+                    errorMessage = 'Phone number is required';
+                    isValid = false;
+                } else if (!/^[\+]?[\d\s\-\(\)]+$/.test(value) || value.replace(/\D/g, '').length < 8) {
+                    errorMessage = 'Please enter a valid phone number';
+                    isValid = false;
+                }
+                break;
+                
+            case 'select-one':
+                if (!value) {
+                    errorMessage = 'Please select a car type';
+                    isValid = false;
+                }
+                break;
+        }
+        
+        if (!isValid) {
+            field.classList.add('error');
+            this.showError(field, errorMessage);
+        }
+        
+        return isValid;
+    },
+    
+    // Show error message
+    showError: function(field, message) {
+        var errorElement = document.getElementById(field.id + '_error');
+        if (errorElement) {
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+        }
+    },
+    
+    // Clear error message
+    clearError: function(field) {
+        var errorElement = document.getElementById(field.id + '_error');
+        if (errorElement) {
+            errorElement.textContent = '';
+            errorElement.style.display = 'none';
+        }
+    },
+    
+    // Format phone number
+    formatPhoneNumber: function(input) {
+        var value = input.value.replace(/\D/g, '');
+        
+        if (value.length >= 6) {
+            if (value.startsWith('973') && value.length === 11) {
+                value = value.replace(/(\d{3})(\d{4})(\d{4})/, '+$1 $2 $3');
+            } else if (value.length === 8) {
+                value = value.replace(/(\d{4})(\d{4})/, '$1 $2');
+            }
+        }
+        
+        input.value = value;
+    },
+    
+    // Handle form submission
+    handleFormSubmission: function(e) {
+        var allValid = true;
+        
+        // Validate all fields
+        ['pickupDate', 'returnDate', 'carType', 'renterName', 'renterEmail', 'renterPhone'].forEach(function(fieldName) {
+            if (this.formElements[fieldName]) {
+                if (!this.validateField(this.formElements[fieldName])) {
+                    allValid = false;
+                }
+            }
+        }.bind(this));
+        
+        // Check date logic
+        if (this.formElements.pickupDate && this.formElements.returnDate) {
+            var pickupDate = new Date(this.formElements.pickupDate.value);
+            var returnDate = new Date(this.formElements.returnDate.value);
+            
+            if (returnDate <= pickupDate) {
+                e.preventDefault();
+                this.showError(this.formElements.returnDate, 'Return date must be after pickup date');
+                allValid = false;
+            }
+            
+            var days = Math.ceil((returnDate - pickupDate) / (1000 * 60 * 60 * 24));
+            if (days > 90) {
+                e.preventDefault();
+                this.showError(this.formElements.returnDate, 'Maximum rental period is 90 days');
+                allValid = false;
+            }
+        }
+        
+        // Check terms acceptance
+        if (!this.formElements.acceptTerms.checked) {
+            e.preventDefault();
+            alert('Please accept the terms and conditions');
+            allValid = false;
+        }
+        
+        if (!allValid) {
+            e.preventDefault();
+            alert('Please correct the errors in the form');
+            return;
+        }
+        
+        // Show loading state
+        if (this.formElements.confirmButton) {
+            this.formElements.confirmButton.innerHTML = '⏳ Processing Rental...';
+            this.formElements.confirmButton.disabled = true;
+        }
+    }
+};
+
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    CarBookingSystem.init();
+});
+</script>
+
+<style>
+.rental-summary {
+    background: white;
+    padding: 2rem;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    margin-bottom: 2rem;
+}
+
+.rental-summary-box {
+    background: #f8fafc;
+    padding: 1.5rem;
+    border-radius: 12px;
+    margin: 1.5rem 0;
+    border: 1px solid #e2e8f0;
+}
+
+.rental-summary-box h4 {
+    margin-bottom: 1rem;
+    color: #374151;
+}
+
+.rental-requirements {
+    background: #fef3c7;
+    padding: 1.5rem;
+    border-radius: 12px;
+    margin: 1.5rem 0;
+    border: 1px solid #fbbf24;
+}
+
+.rental-requirements h4 {
+    color: #92400e;
+    margin-bottom: 1rem;
+}
+
+.rental-requirements ul {
+    list-style: none;
+    padding: 0;
+}
+
+.rental-requirements li {
+    color: #92400e;
+    margin-bottom: 0.5rem;
+    position: relative;
+    padding-left: 1.5rem;
+}
+
+.rental-requirements li:before {
+    content: "⚠";
+    position: absolute;
+    left: 0;
+    font-weight: bold;
+}
+
+.calc-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+    padding: 0.5rem 0;
+}
+
+.calc-row.total {
+    border-top: 2px solid #e2e8f0;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.error-message {
+    color: #ef4444;
+    font-size: 0.85rem;
+    margin-top: 0.25rem;
+    display: none;
+}
+
+.form-control.error {
+    border-color: #ef4444;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.btn-ready {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+    animation: pulse 2s infinite;
+}
+
+.terms-section {
+    background: #f0f9ff;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin: 1.5rem 0;
+    border: 1px solid #0ea5e9;
+}
+
+.checkbox-container {
+    display: flex;
+    align-items: flex-start;
+    cursor: pointer;
+    line-height: 1.4;
+}
+
+.checkbox-container input[type="checkbox"] {
+    margin-right: 0.5rem;
+    margin-top: 0.1rem;
+    transform: scale(1.2);
+}
+
+.checkbox-container a {
+    color: #0ea5e9;
+    text-decoration: none;
+}
+
+.checkbox-container a:hover {
+    text-decoration: underline;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+}
+
+@media (max-width: 768px) {
+    .rental-summary {
+        padding: 1.5rem;
+    }
+    
+    .rental-summary-box {
+        padding: 1rem;
+    }
+    
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}

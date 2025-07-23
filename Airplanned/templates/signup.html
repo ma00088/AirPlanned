@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+
+{% block title %}Sign Up - AirPlanned{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <h2>Create Account</h2>
+            <p>Join AirPlanned and start booking your travels</p>
+        </div>
+        
+        <form method="POST" class="auth-form">
+            <div class="form-group">
+                <label for="full_name">Full Name</label>
+                <input type="text" name="full_name" id="full_name" class="form-control" required 
+                       placeholder="Enter your full name" autocomplete="name">
+            </div>
+            
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input type="email" name="email" id="email" class="form-control" required 
+                       placeholder="Enter your email address" autocomplete="email">
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" name="password" id="password" class="form-control" 
+                       minlength="6" required placeholder="Create a password" autocomplete="new-password">
+                <small>Password must be at least 6 characters long</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="confirm_password">Confirm Password</label>
+                <input type="password" name="confirm_password" id="confirm_password" 
+                       class="form-control" required placeholder="Confirm your password" autocomplete="new-password">
+            </div>
+            
+            <div class="terms-agreement">
+                <label class="checkbox-container">
+                    <input type="checkbox" name="agree_terms" required>
+                    <span class="checkmark"></span>
+                    I agree to the <a href="#" target="_blank">Terms of Service</a> and <a href="#" target="_blank">Privacy Policy</a>
+                </label>
+            </div>
+            
+            <button type="submit" class="btn btn-primary btn-large">Create Account</button>
+        </form>
+        
+        <div class="auth-footer">
+            <p>Already have an account? <a href="{{ url_for('login') }}">Sign in here</a></p>
+        </div>
+    </div>
+</div>
+
+<script>
+// Password confirmation validation
+document.getElementById('confirm_password').addEventListener('input', function() {
+    const password = document.getElementById('password').value;
+    const confirmPassword = this.value;
+    
+    if (password !== confirmPassword) {
+        this.setCustomValidity('Passwords do not match');
+    } else {
+        this.setCustomValidity('');
+    }
+});
+
+// Password strength indicator
+document.getElementById('password').addEventListener('input', function() {
+    const password = this.value;
+    const strengthIndicator = document.getElementById('password-strength') || createStrengthIndicator();
+    
+    const strength = calculatePasswordStrength(password);
+    updateStrengthIndicator(strengthIndicator, strength);
+    
+    // Also validate confirm password if it has a value
+    const confirmPassword = document.getElementById('confirm_password');
+    if (confirmPassword.value) {
+        if (password !== confirmPassword.value) {
+            confirmPassword.setCustomValidity('Passwords do not match');
+        } else {
+            confirmPassword.setCustomValidity('');
+        }
+    }
+});
+
+function createStrengthIndicator() {
+    const indicator = document.createElement('div');
+    indicator.id = 'password-strength';
+    indicator.className = 'password-strength';
+    indicator.innerHTML = `
+        <div class="strength-bar">
+            <div class="strength-fill"></div>
+        </div>
+        <div class="strength-text">Password strength: <span></span></div>
+    `;
+    
+    const passwordGroup = document.getElementById('password').parentNode;
+    passwordGroup.appendChild(indicator);
+    
+    return indicator;
+}
+
+function calculatePasswordStrength(password) {
+    let score = 0;
+    if (password.length >= 6) score++;
+    if (password.length >= 8) score++;
+    if (/[a-z]/.test(password)) score++;
+    if (/[A-Z]/.test(password)) score++;
+    if (/[0-9]/.test(password)) score++;
+    if (/[^A-Za-z0-9]/.test(password)) score++;
+    
+    return Math.min(score, 4);
+}
+
+function updateStrengthIndicator(indicator, strength) {
+    const fill = indicator.querySelector('.strength-fill');
+    const text = indicator.querySelector('.strength-text span');
+    
+    const levels = ['Very Weak', 'Weak', 'Fair', 'Good', 'Strong'];
+    const colors = ['#ff4757', '#ff6b6b', '#feca57', '#48dbfb', '#0be881'];
+    
+    fill.style.width = `${(strength / 4) * 100}%`;
+    fill.style.backgroundColor = colors[strength] || colors[0];
+    text.textContent = levels[strength] || levels[0];
+    text.style.color = colors[strength] || colors[0];
+}
+
+// Form validation
+document.querySelector('.auth-form').addEventListener('submit', function(e) {
+    const fullName = document.getElementById('full_name').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const confirmPassword = document.getElementById('confirm_password').value;
+    const agreeTerms = document.querySelector('input[name="agree_terms"]').checked;
+    
+    // Validate all fields
+    if (!fullName || !email || !password || !confirmPassword) {
+        e.preventDefault();
+        alert('Please fill in all fields');
+        return;
+    }
+    
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        e.preventDefault();
+        alert('Please enter a valid email address');
+        return;
+    }
+    
+    // Validate password length
+    if (password.length < 6) {
+        e.preventDefault();
+        alert('Password must be at least 6 characters long');
+        return;
+    }
+    
+    // Validate password match
+    if (password !== confirmPassword) {
+        e.preventDefault();
+        alert('Passwords do not match');
+        return;
+    }
+    
+    // Validate terms agreement
+    if (!agreeTerms) {
+        e.preventDefault();
+        alert('Please agree to the Terms of Service and Privacy Policy');
+        return;
+    }
+    
+    // Show loading state
+    const submitButton = e.target.querySelector('button[type="submit"]');
+    submitButton.innerHTML = '⏳ Creating Account...';
+    submitButton.disabled = true;
+});
+</script>
+
+<style>
+.terms-agreement {
+    margin: 1rem 0;
+    font-size: 0.9rem;
+}
+
+.checkbox-container {
+    display: flex;
+    align-items: flex-start;
+    cursor: pointer;
+    line-height: 1.4;
+}
+
+.checkbox-container input {
+    margin-right: 0.5rem;
+    margin-top: 0.1rem;
+}
+
+.checkbox-container a {
+    color: #667eea;
+    text-decoration: none;
+}
+
+.checkbox-container a:hover {
+    text-decoration: underline;
+}
+
+.password-strength {
+    margin-top: 0.5rem;
+}
+
+.strength-bar {
+    width: 100%;
+    height: 4px;
+    background: #e2e8f0;
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 0.25rem;
+}
+
+.strength-fill {
+    height: 100%;
+    width: 0%;
+    transition: all 0.3s ease;
+    border-radius: 2px;
+}
+
+.strength-text {
+    font-size: 0.8rem;
+    color: #6b7280;
+}
+</style>
+{% endblock %}
